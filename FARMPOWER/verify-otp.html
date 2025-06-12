@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify OTP - FarmPower</title>
+  <meta name="description" content="OTP Verification page for FarmPower">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Basic Tailwind config (can be extended)
+    tailwind.config = {
+      darkMode: 'class', // or 'media'
+      theme: {
+        extend: {
+          colors: {
+            primary: 'hsl(var(--primary))',
+            'primary-foreground': 'hsl(var(--primary-foreground))',
+            secondary: 'hsl(var(--secondary))',
+            'secondary-foreground': 'hsl(var(--secondary-foreground))',
+            background: 'hsl(var(--background))',
+            foreground: 'hsl(var(--foreground))',
+            muted: 'hsl(var(--muted))',
+            'muted-foreground': 'hsl(var(--muted-foreground))',
+            accent: 'hsl(var(--accent))',
+            'accent-foreground': 'hsl(var(--accent-foreground))',
+            destructive: 'hsl(var(--destructive))',
+            'destructive-foreground': 'hsl(var(--destructive-foreground))',
+            border: 'hsl(var(--border))',
+            input: 'hsl(var(--input))',
+            ring: 'hsl(var(--ring))',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Define CSS variables for colors (mimicking shadcn/ui structure) */
+    :root {
+      --background: 0 0% 100%; /* Light mode background */
+      --foreground: 222.2 84% 4.9%; /* Light mode text */
+      --primary: 142.1 76.2% 36.3%; /* Example: Green */
+      --primary-foreground: 355.7 100% 97.3%;
+      --secondary: 210 40% 96.1%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --accent: 210 40% 96.1%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 0 0% 98%;
+      --border: 214.3 31.8% 91.4%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 142.1 76.2% 36.3%; /* Focus ring color */
+    }
+    .dark {
+      --background: 222.2 84% 4.9%; /* Dark mode background */
+      --foreground: 210 40% 98%;     /* Dark mode text */
+      --primary: 142.1 70.2% 46.3%; /* Example: Lighter Green for dark */
+      --primary-foreground: 355.7 100% 97.3%;
+      --secondary: 217.2 32.6% 17.5%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 217.2 32.6% 17.5%;
+      --muted-foreground: 215 20.2% 65.1%;
+      --accent: 217.2 32.6% 17.5%;
+      --accent-foreground: 210 40% 98%;
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 0 0% 98%;
+      --border: 217.2 32.6% 17.5%;
+      --input: 217.2 32.6% 17.5%;
+      --ring: 142.1 70.2% 46.3%;
+    }
+    body {
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground">
+
+  <!-- Minimal Header for OTP page -->
+  <header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+    <div class="container mx-auto px-4 md:px-6">
+      <nav class="flex items-center justify-between py-4">
+        <a href="index.html" class="flex items-center space-x-2">
+          <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
+          <span class="text-xl font-bold">FarmPower</span>
+        </a>
+        <div>
+             <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 md:px-6 py-12">
+    <div class="max-w-md mx-auto bg-white dark:bg-gray-800 p-8 shadow-xl rounded-xl text-center">
+        <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Verify Your Account</h1>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">
+            An OTP has been sent to your registered email/phone. Please enter it below to complete your registration.
+        </p>
+        <form id="otpForm" class="space-y-6">
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Email (or Phone if OTP sent via SMS)</label>
+                <input type="text" name="identifier" id="identifier" required
+                       class="mt-1 block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                       placeholder="you@example.com or +1234567890">
+            </div>
+            <div>
+                <label for="otp" class="block text-sm font-medium text-gray-700 dark:text-gray-200">One-Time Password (OTP)</label>
+                <input type="text" name="otp" id="otp" required
+                       class="mt-1 block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm tracking-widest text-center dark:bg-gray-700 dark:text-white"
+                       placeholder="••••••">
+            </div>
+            <div>
+                <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Verify OTP
+                </button>
+            </div>
+            <div id="otpErrorMessages" class="text-red-600 text-sm"></div>
+            <div id="otpSuccessMessages" class="text-green-600 text-sm"></div>
+        </form>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
+            Didn't receive OTP? <a href="#" id="resendOtpLink" class="text-green-600 hover:underline">Resend OTP</a>
+        </p>
+        <p class="mt-8 text-sm text-gray-500 dark:text-gray-400">
+            OTP verification page - Backend functionality coming soon.
+        </p>
+    </div>
+  </main>
+
+  <footer class="bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-12">
+    <div class="container mx-auto px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      &copy; 2024 FarmPower. All rights reserved.
+    </div>
+  </footer>
+
+  <script>
+    // Basic theme toggle
+    // Note: For a real app, this script would be in a shared JS file.
+    // For this placeholder, it's included directly.
+    const htmlElement = document.documentElement;
+    // Check local storage for theme preference
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      htmlElement.classList.add('dark');
+    } else {
+      htmlElement.classList.remove('dark');
+    }
+
+    const otpForm = document.getElementById('otpForm');
+    const otpErrorMessages = document.getElementById('otpErrorMessages');
+    const otpSuccessMessages = document.getElementById('otpSuccessMessages');
+    const resendOtpLink = document.getElementById('resendOtpLink');
+
+    if (otpForm) {
+        otpForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            if(otpErrorMessages) otpErrorMessages.textContent = '';
+            if(otpSuccessMessages) otpSuccessMessages.textContent = '';
+
+            const identifier = document.getElementById('identifier').value;
+            const otp = document.getElementById('otp').value;
+
+            // Placeholder for OTP verification logic
+            // Replace with actual fetch call to backend: POST /users/verify-otp { identifier, otp }
+            console.log('Verifying OTP for:', identifier, 'with OTP:', otp);
+            if(otpErrorMessages) otpErrorMessages.textContent = 'OTP verification backend not implemented yet.';
+
+            // Example of success:
+            // if(otpSuccessMessages) otpSuccessMessages.textContent = 'Verification successful! Redirecting to login...';
+            // setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+
+            // Example of error:
+            // if(otpErrorMessages) otpErrorMessages.textContent = 'Invalid OTP. Please try again.';
+        });
+    }
+
+    if (resendOtpLink) {
+        resendOtpLink.addEventListener('click', async function(event) {
+            event.preventDefault();
+            const identifier = document.getElementById('identifier').value;
+            if (!identifier) {
+                if(otpErrorMessages) otpErrorMessages.textContent = 'Please enter your email/phone to resend OTP.';
+                return;
+            }
+            // Placeholder for resend OTP logic
+            // Replace with actual fetch call to backend: POST /users/resend-otp { identifier }
+            console.log('Resending OTP for:', identifier);
+            if(otpSuccessMessages) otpSuccessMessages.textContent = 'Resend OTP request sent (backend not implemented).';
+            // if(otpErrorMessages) otpErrorMessages.textContent = 'Failed to resend OTP (backend not implemented).';
+        });
+    }
+  </script>
+</body>
+</html>

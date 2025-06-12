@@ -1,0 +1,222 @@
+/* Global Resets and Base Styles */
+body, h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote, dl, dd {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+    line-height: 1.6;
+    background-color: #f4f7f6; /* Light greenish-gray, farm-like */
+    color: #333;
+    padding: 10px; /* Add some padding around the whole page */
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto; /* Added top/bottom margin */
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.8em;
+    color: #2c5e2e; /* Dark green for headings */
+    font-weight: normal;
+}
+h1 { font-size: 2.2em; }
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.5em; }
+
+/* Links */
+a {
+    color: #007bff; /* Standard blue for links */
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Basic Navigation Styling (Placeholder) */
+nav {
+    background-color: #38761d; /* Darker green for nav */
+    color: white;
+    padding: 1em 0;
+    margin-bottom: 20px;
+}
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    text-align: center;
+}
+nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+nav ul li a {
+    color: white;
+    text-decoration: none;
+}
+
+/* Form Elements */
+form {
+    margin-bottom: 20px;
+}
+form div {
+    margin-bottom: 15px;
+}
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important for width calculation */
+    font-size: 1em;
+}
+textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Buttons */
+button, input[type="submit"], input[type="button"] {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 1em;
+    color: #fff;
+    background-color: #28a745; /* FarmPower green */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+button:hover, input[type="submit"]:hover, input[type="button"]:hover {
+    background-color: #218838; /* Darker green */
+}
+button.secondary, input[type="button"].secondary {
+    background-color: #6c757d; /* Grey for secondary actions */
+}
+button.secondary:hover, input[type="button"].secondary:hover {
+    background-color: #5a6268;
+}
+button.danger, input[type="button"].danger {
+    background-color: #dc3545; /* Red for danger/delete */
+}
+button.danger:hover, input[type="button"].danger:hover {
+    background-color: #c82333;
+}
+
+
+/* Tables (Basic Styling) */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+th, td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+th {
+    background-color: #e9f5e9; /* Light green for table headers */
+    color: #2c5e2e;
+}
+tr:hover {
+    background-color: #f1f8f1;
+}
+
+/* Utility Classes */
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+.success-message {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.card h3 {
+    margin-top: 0;
+    color: #38761d; /* Specific green for card titles */
+}
+
+/* Specific styles for marketplace listings if needed */
+.listing-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.listing {
+    border: 1px solid #ccc;
+    padding: 15px;
+    width: calc(33.333% - 20px); /* Adjust for gap, for a 3-column layout */
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    background-color: #fff;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.listing img { /* Assuming images will be added */
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    background-color: #eee; /* Placeholder background */
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+.listing h3 {
+    margin-top: 0;
+    font-size: 1.2em;
+}
+.listing p {
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+/* Notification specific styles (can be refined from notification.html) */
+.notifications-container ul, .broadcasts-container div {
+    margin-top: 10px;
+}
+/* Add more specific styles as needed and remove from inline */
+
+hr {
+    border: 0;
+    height: 1px;
+    background: #ddd;
+    margin: 30px 0;
+}

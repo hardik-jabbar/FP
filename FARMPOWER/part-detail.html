@@ -203,29 +203,63 @@
   }
 
   // Check authentication state on page load
-  async function checkAuth() {
-    try {
-      const response = await fetch('/api/user/me');
-      if (response.ok) {
-        const userData = await response.json();
-        updateAuthState(true, userData);
-      } else {
-        updateAuthState(false);
+  async function fetchUserDetails() { // NEW - consistent with other pages
+      try {
+          const token = localStorage.getItem('access_token');
+          if (!token) {
+              updateAuthState(false);
+              return null;
+          }
+          const response = await fetch('/users/me', {
+              method: 'GET',
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Accept': 'application/json'
+              }
+          });
+          if (response.ok) {
+              const userData = await response.json();
+              updateAuthState(true, userData);
+              return userData;
+          } else {
+              localStorage.removeItem('access_token');
+              updateAuthState(false);
+              return null;
+          }
+      } catch (error) {
+          console.error('Failed to fetch user details:', error);
+          updateAuthState(false);
+          return null;
       }
-    } catch (error) {
-      console.error('Error checking auth:', error);
-      updateAuthState(false);
+  }
+
+  async function checkAuth() { // MODIFIED - consistent
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        await fetchUserDetails();
+    } else {
+        updateAuthState(false);
     }
   }
 
   // Logout function
-  async function logout() {
+  async function logout() { // MODIFIED - consistent
     try {
-      await fetch('/api/logout', { method: 'POST' });
-      updateAuthState(false);
-      window.location.href = "login.html";
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        await fetch('/users/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Logout request failed:', error);
+    } finally {
+        localStorage.removeItem('access_token');
+        updateAuthState(false);
+        if (typeof window !== 'undefined' && window.location && window.location.pathname !== '/FARMPOWER/login.html' && window.location.pathname !== '/login.html') {
+            window.location.href = "login.html";
+        }
     }
   }
 
@@ -391,60 +425,109 @@
     // Load part details
     async function loadPartDetails() {
       try {
-        const response = await fetch(`/api/marketplace/parts/${partId}`);
+        const response = await fetch(`/parts/${partId}`); // MODIFIED URL
         const part = await response.json();
         
         // Update page title and meta description
-        document.title = `${part.title} - FarmPower`;
-        document.querySelector('meta[name="description"]').content = part.description;
+        document.title = `${part.name || 'Part'} Details - FarmPower`; // MODIFIED: part.name
+        document.querySelector('meta[name="description"]').content = part.description || 'Detailed information about this tractor part.';
 
         // Update breadcrumb
-        document.getElementById('partTitle').textContent = part.title;
+        document.getElementById('partTitle').textContent = part.name || 'Part Details'; // MODIFIED: part.name
 
         // Update product info
-        document.getElementById('productTitle').textContent = part.title;
-        document.getElementById('productPrice').textContent = `$${part.price.toLocaleString()}`;
-        document.getElementById('totalPrice').textContent = `$${part.price.toLocaleString()}`;
-        document.getElementById('productLocation').textContent = part.location;
-        document.getElementById('category').textContent = part.category;
-        document.getElementById('brand').textContent = part.brand;
-        document.getElementById('condition').textContent = part.condition;
-        document.getElementById('quantity').textContent = part.quantity;
-        document.getElementById('compatibility').textContent = part.compatibility;
-        document.getElementById('description').textContent = part.description;
+        document.getElementById('productTitle').textContent = part.name || 'N/A'; // MODIFIED: part.name
+        document.getElementById('productPrice').textContent = `$${part.price ? part.price.toLocaleString() : 'N/A'}`;
+        document.getElementById('totalPrice').textContent = `$${part.price ? part.price.toLocaleString() : 'N/A'}`; // Initial total price
+        document.getElementById('productLocation').textContent = part.location || 'N/A'; // Assuming part.location exists
+        document.getElementById('category').textContent = part.category || 'N/A';
+
+        // Brand: PartSchema has compatible_tractor_brands (list)
+        const brandText = (part.compatible_tractor_brands && part.compatible_tractor_brands.length > 0) ? part.compatible_tractor_brands.join(', ') : 'N/A';
+        document.getElementById('brand').textContent = brandText;
+
+        document.getElementById('condition').textContent = part.condition || 'N/A';
+        document.getElementById('quantity').textContent = part.stock_quantity !== undefined ? part.stock_quantity : 'N/A'; // Assuming stock_quantity
+
+        // Compatibility: PartSchema has compatible_models (list)
+        const compatibilityText = (part.compatible_models && part.compatible_models.length > 0) ? part.compatible_models.join(', ') : 'Not specified';
+        document.getElementById('compatibility').textContent = compatibilityText;
+
+        document.getElementById('description').textContent = part.description || 'No description available.';
 
         // Update stock status
-        document.getElementById('stockStatus').textContent = part.quantity > 0 ? 'In Stock' : 'Out of Stock';
-        document.getElementById('stockStatus').className = part.quantity > 0 
+        const stockQuantity = part.stock_quantity !== undefined ? part.stock_quantity : 0;
+        document.getElementById('stockStatus').textContent = stockQuantity > 0 ? 'In Stock' : 'Out of Stock';
+        document.getElementById('stockStatus').className = stockQuantity > 0
           ? 'px-3 py-1 bg-green-500 text-white text-sm rounded-full'
           : 'px-3 py-1 bg-red-500 text-white text-sm rounded-full';
 
         // Update images
-        document.getElementById('mainImage').src = part.image_url;
-        document.getElementById('mainImage').alt = part.title;
+        const mainImage = document.getElementById('mainImage');
+        const thumbnailsContainer = document.querySelector('.grid.grid-cols-4.gap-4'); // Assuming this is the thumbnails container
 
-        // Load similar parts
-        loadSimilarParts(part.category);
+        if (part.image_urls && part.image_urls.length > 0) {
+            mainImage.src = part.image_urls[0];
+            mainImage.alt = part.name;
+
+            if (thumbnailsContainer) {
+                thumbnailsContainer.innerHTML = part.image_urls.map((url, index) => `
+                    <img class="thumbnail w-full h-24 object-cover rounded-lg ${index === 0 ? 'active' : ''}" src="${url}" alt="${part.name} thumbnail ${index + 1}" onclick="changeMainImage('${url}', this)">
+                `).join('');
+            }
+        } else {
+            mainImage.src = 'assets/images/part-placeholder.png'; // Default placeholder
+            mainImage.alt = 'Part image placeholder';
+            if (thumbnailsContainer) thumbnailsContainer.innerHTML = ''; // Clear thumbnails
+        }
+
+        // Seller Info - Assuming part.owner has full_name and profile_picture_url
+        if (part.owner) {
+            document.getElementById('sellerName').textContent = part.owner.full_name || 'N/A';
+            document.getElementById('sellerLocation').textContent = part.owner.location || 'N/A'; // Assuming owner has location
+            if (part.owner.profile_picture_url) {
+                 document.getElementById('sellerAvatar').src = part.owner.profile_picture_url;
+            } else {
+                 document.getElementById('sellerAvatar').src = 'assets/images/avatar-placeholder.png';
+            }
+        }
+
+
+        // Load similar parts (if category is available)
+        if (part.category) {
+            loadSimilarParts(part.category, part.id);
+        }
       } catch (error) {
         console.error('Error loading part details:', error);
+        document.getElementById('productTitle').textContent = 'Error loading part';
+        // Display error to user appropriately
       }
     }
 
+    function changeMainImage(newSrc, clickedThumbnail) {
+        document.getElementById('mainImage').src = newSrc;
+        document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+        if(clickedThumbnail) clickedThumbnail.classList.add('active');
+    }
+
     // Load similar parts
-    async function loadSimilarParts(category) {
+    async function loadSimilarParts(category, currentPartId) { // Added currentPartId to exclude it
       try {
-        const response = await fetch(`/api/marketplace/parts?category=${category}&limit=2`);
+        const response = await fetch(`/parts?category=${category}&limit=3`); // MODIFIED URL, limit to 2 + current for potential exclusion
         const parts = await response.json();
         
         const grid = document.getElementById('similarParts');
-        grid.innerHTML = '';
-        
-        parts.forEach(part => {
-          if (part.id.toString() !== partId) {
-            const card = createSimilarCard(part);
-            grid.insertAdjacentHTML('beforeend', card);
-          }
-        });
+        if (grid) {
+            grid.innerHTML = ''; // Clear previous similar parts
+            let count = 0;
+            for (const part of parts) {
+                if (part.id.toString() !== currentPartId.toString() && count < 2) { // Ensure different part and limit to 2
+                    const card = createSimilarCard(part);
+                    grid.insertAdjacentHTML('beforeend', card);
+                    count++;
+                }
+            }
+        }
       } catch (error) {
         console.error('Error loading similar parts:', error);
       }
@@ -452,14 +535,15 @@
 
     // Create similar part card HTML
     function createSimilarCard(part) {
+      const imageUrl = (part.image_urls && part.image_urls.length > 0) ? part.image_urls[0] : 'assets/images/part-placeholder.png';
       return `
-        <a href="/part-detail.html?id=${part.id}" class="card-hover bg-dark-300 rounded-xl overflow-hidden">
-          <img src="${part.image_url}" alt="${part.title}" class="w-full h-32 object-cover">
+        <a href="part-detail.html?id=${part.id}" class="card-hover bg-dark-300 rounded-xl overflow-hidden block">
+          <img src="${imageUrl}" alt="${part.name}" class="w-full h-32 object-cover">
           <div class="p-4">
-            <h3 class="font-medium mb-2">${part.title}</h3>
+            <h3 class="font-medium mb-2 truncate">${part.name}</h3>
             <div class="flex justify-between items-center">
-              <span class="text-green-500 font-bold">$${part.price.toLocaleString()}</span>
-              <span class="text-gray-400 text-sm">${part.condition}</span>
+              <span class="text-green-500 font-bold">$${part.price ? part.price.toLocaleString() : 'N/A'}</span>
+              <span class="text-gray-400 text-sm">${part.condition || 'N/A'}</span>
             </div>
           </div>
         </a>
@@ -467,6 +551,148 @@
     }
 
     // Update total price when quantity changes
+    const quantityInput = document.getElementById('quantityInput');
+    if (quantityInput) {
+        quantityInput.addEventListener('input', (e) => { // Changed to 'input' for better responsiveness
+            const quantity = parseInt(e.target.value);
+            const productPriceElement = document.getElementById('productPrice');
+            if (productPriceElement && productPriceElement.textContent) {
+                const priceText = productPriceElement.textContent.replace('$', '').replace(/,/g, '');
+                const price = parseFloat(priceText);
+                if (!isNaN(price) && quantity >= 1) {
+                    document.getElementById('totalPrice').textContent = `$${(quantity * price).toLocaleString()}`;
+                } else if (quantity < 1) {
+                    e.target.value = 1; // Reset to 1 if invalid
+                    document.getElementById('totalPrice').textContent = `$${price.toLocaleString()}`;
+                }
+            }
+        });
+    }
+
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      if (partId) {
+        loadPartDetails();
+      } else {
+        // Redirect or show error if no partId
+        const mainContent = document.querySelector('main.container');
+        if(mainContent) mainContent.innerHTML = '<h1 class="text-2xl text-red-500 text-center py-10">No part ID specified. Please select a part from the marketplace.</h1>';
+        // Consider redirecting: window.location.href = 'parts-marketplace.html';
+      }
+    });
+
+    // Image gallery functionality (already present, ensure it works with dynamic thumbnails)
+    // The existing querySelectorAll might need to be called after thumbnails are loaded if they are dynamic.
+    // The current implementation of adding thumbnails dynamically in loadPartDetails should work with the provided onclick handler.
+  </script>
+<!-- Footer -->
+<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <!-- Company Info -->
+      <div>
+        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+          <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+          <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+          <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Support</h3>
+        <ul class="space-y-2">
+          <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+          <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+          <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+          <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+        </ul>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+        <form class="space-y-2">
+          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 border-t border-dark-300">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+          <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+          <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+          <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Newsletter form submission
+  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.querySelector('input[type="email"]').value;
+
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        alert('Thank you for subscribing!');
+        e.target.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
+  });
+</script>
+</body>
+</html>
     document.getElementById('quantityInput').addEventListener('change', (e) => {
       const quantity = parseInt(e.target.value);
       const price = parseFloat(document.getElementById('productPrice').textContent.replace('$', '').replace(',', ''));

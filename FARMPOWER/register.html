@@ -172,41 +172,184 @@
   }
 
   // Check authentication state on page load
-  async function checkAuth() {
-    try {
-      const response = await fetch('/api/user/me');
-      if (response.ok) {
-        const userData = await response.json();
-        updateAuthState(true, userData);
-      } else {
-        updateAuthState(false);
+  async function fetchUserDetails() { // NEW - consistent with login.html
+      try {
+          const token = localStorage.getItem('access_token');
+          if (!token) {
+              updateAuthState(false);
+              return null;
+          }
+          const response = await fetch('/users/me', {
+              method: 'GET',
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Accept': 'application/json'
+              }
+          });
+          if (response.ok) {
+              const userData = await response.json();
+              updateAuthState(true, userData);
+              return userData;
+          } else {
+              localStorage.removeItem('access_token');
+              updateAuthState(false);
+              return null;
+          }
+      } catch (error) {
+          console.error('Failed to fetch user details:', error);
+          updateAuthState(false);
+          return null;
       }
-    } catch (error) {
-      console.error('Error checking auth:', error);
-      updateAuthState(false);
+  }
+
+  async function checkAuth() { // MODIFIED - consistent with login.html
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        await fetchUserDetails();
+    } else {
+        updateAuthState(false);
     }
   }
 
   // Logout function
-  async function logout() {
+  async function logout() { // MODIFIED - consistent with login.html
     try {
-      await fetch('/api/logout', { method: 'POST' });
-      updateAuthState(false);
-      window.location.href = "login.html";
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        await fetch('/users/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Logout request failed:', error);
+    } finally {
+        localStorage.removeItem('access_token');
+        updateAuthState(false);
+        if (typeof window !== 'undefined' && window.location && window.location.pathname !== '/FARMPOWER/login.html' && window.location.pathname !== '/login.html') {
+            window.location.href = "login.html";
+        }
     }
   }
 
   // Initialize
   checkAuth();
+
+  // Registration form specific script - NEW
+  const registerForm = document.getElementById('registerForm');
+  const registerErrorMessages = document.getElementById('registerErrorMessages');
+  const registerSuccessMessages = document.getElementById('registerSuccessMessages');
+
+  if (registerForm) {
+      registerForm.addEventListener('submit', async function(event) {
+          event.preventDefault();
+          if(registerErrorMessages) registerErrorMessages.textContent = '';
+          if(registerSuccessMessages) registerSuccessMessages.textContent = '';
+
+          const fullNameInput = document.getElementById('fullName');
+          const emailInput = document.getElementById('email');
+          const phoneNumberInput = document.getElementById('phoneNumber');
+          const passwordInput = document.getElementById('password');
+          const roleInput = document.getElementById('role');
+
+          // Basic null checks for form elements
+          if (!fullNameInput || !emailInput || !phoneNumberInput || !passwordInput || !roleInput) {
+              if(registerErrorMessages) registerErrorMessages.textContent = 'Form elements are missing. Please contact support.';
+              console.error("One or more registration form elements are missing.");
+              return;
+          }
+
+          const userData = {
+              email: emailInput.value,
+              password: passwordInput.value,
+              full_name: fullNameInput.value,
+              phone_number: phoneNumberInput.value,
+              role: roleInput.value.toUpperCase()
+          };
+
+          try {
+              const response = await fetch('/users/register', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(userData)
+              });
+
+              if (response.status === 201) {
+                  const data = await response.json();
+                  if(registerSuccessMessages) registerSuccessMessages.textContent = 'Registration successful! Redirecting to login...';
+                  // Consider redirecting to an OTP verification page if that flow is implemented
+                  // For now, redirect to login.html
+                  setTimeout(() => {
+                      window.location.href = 'login.html';
+                  }, 2500);
+              } else {
+                  const errorData = await response.json();
+                  if (errorData.detail && Array.isArray(errorData.detail)) {
+                      // Handle FastAPI validation errors
+                      let messages = errorData.detail.map(err => `${err.loc[1]}: ${err.msg}`).join('; ');
+                      if(registerErrorMessages) registerErrorMessages.textContent = messages;
+                  } else if (errorData.detail) {
+                      if(registerErrorMessages) registerErrorMessages.textContent = errorData.detail;
+                  } else {
+                      if(registerErrorMessages) registerErrorMessages.textContent = 'Registration failed. Please try again.';
+                  }
+              }
+          } catch (error) {
+              console.error('Registration error:', error);
+              if(registerErrorMessages) registerErrorMessages.textContent = 'An error occurred during registration. Please try again.';
+          }
+      });
+  }
 </script> 
   <!-- Include Header -->
   <div id="header-placeholder"></div>
 
   <main class="container mx-auto px-4 md:px-6 py-8">
-    <h1 class="text-3xl font-bold mb-4">Register</h1>
-    <p class="text-muted-foreground">Content coming soon...</p>
+    <h1 class="text-3xl font-bold mb-6 text-center">Create your FarmPower Account</h1>
+    <form id="registerForm" class="space-y-6 max-w-lg mx-auto bg-white p-8 shadow-xl rounded-xl">
+        <div>
+            <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name</label>
+            <input type="text" name="full_name" id="fullName"
+                   class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                   placeholder="John Doe">
+        </div>
+        <div>
+            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+            <input type="email" name="email" id="email" required
+                   class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                   placeholder="you@example.com">
+        </div>
+        <div>
+            <label for="phoneNumber" class="block text-sm font-medium text-gray-700">Phone Number</label>
+            <input type="tel" name="phone_number" id="phoneNumber" required
+                   class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                   placeholder="+1234567890">
+        </div>
+        <div>
+            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+            <input type="password" name="password" id="password" required minlength="8"
+                   class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                   placeholder="Minimum 8 characters">
+        </div>
+        <div>
+            <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
+            <select id="role" name="role" required
+                    class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                <option value="FARMER">Farmer</option>
+                <option value="DEALER">Dealer</option>
+            </select>
+        </div>
+        <div>
+            <button type="submit"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Register
+            </button>
+        </div>
+        <div id="registerErrorMessages" class="text-red-600 text-sm text-center"></div>
+        <div id="registerSuccessMessages" class="text-green-600 text-sm text-center"></div>
+    </form>
   </main>
 
   <!-- Include Footer -->

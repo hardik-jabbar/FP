@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Field Mapping - FarmPower</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Specific styles for GPS page if needed, or move to style.css */
+        #map-placeholder {
+            width: 100%;
+            height: 300px;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        #saved-fields-list-placeholder ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #saved-fields-list-placeholder li {
+            /* Replaced by .card */
+            margin-bottom: 15px;
+        }
+        .field-item h3 {
+            margin-bottom: 10px;
+        }
+        .field-details p {
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+        .field-details strong {
+            display: inline-block;
+            width: 80px; /* Adjusted for better alignment */
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Map Your Fields</h1>
+
+    <!-- Map Placeholder -->
+    <div id="map-placeholder" class="card">
+        Map Area - Field boundaries will be shown here.
+        <br>(Actual map integration requires JavaScript libraries)
+    </div>
+
+    <!-- Recording Tools / Manage Your Fields Controls -->
+    <div id="recording-tools-placeholder" class="card">
+        <h2>Manage Your Fields</h2>
+        <form> <!-- Added form for better structure -->
+            <div>
+                <label for="field_name">Field Name:</label>
+                <input type="text" id="field_name" name="field_name" placeholder="e.g., Back Forty">
+            </div>
+            <div>
+                <button type="button">Save Current Boundary</button>
+                <button type="button" class="secondary" onclick="alert('Simulating clear/cancel of current drawing.')">Clear/Cancel Current Drawing</button>
+            </div>
+        </form>
+        <p><em>Note: GPS recording/drawing tools are simulated.</em></p>
+    </div>
+
+    <hr>
+
+    <!-- Saved Fields List Section -->
+    <div id="saved-fields-list-placeholder" class="card">
+        <h2>Your Saved Fields</h2>
+        <ul>
+            <li class="card">
+                <div class="field-item">
+                    <h3>North Paddock</h3>
+                    <div class="field-details">
+                        <p><strong>Area:</strong> 12.5 acres</p>
+                        <p><strong>Location:</strong> Near village temple</p>
+                    </div>
+                    <button type="button" class="secondary" onclick="alert('Navigating to Land Usage Planner for North Paddock.')">Edit/View Plan</button>
+                    <button type="button" class="danger" onclick="confirm('Are you sure you want to delete North Paddock?')">Delete</button>
+                </div>
+            </li>
+            <li class="card">
+                <div class="field-item">
+                    <h3>River Bend Field</h3>
+                    <div class="field-details">
+                        <p><strong>Area:</strong> 8.2 acres</p>
+                        <p><strong>Location:</strong> Adjacent to the old mango grove</p>
+                    </div>
+                    <button type="button" class="secondary" onclick="alert('Navigating to Land Usage Planner for River Bend Field.')">Edit/View Plan</button>
+                    <button type="button" class="danger" onclick="confirm('Are you sure you want to delete River Bend Field?')">Delete</button>
+                </div>
+            </li>
+            <li class="card">
+                <div class="field-item">
+                    <h3>Homestead Plot</h3>
+                    <div class="field-details">
+                        <p><strong>Area:</strong> 1.5 acres</p>
+                        <p><strong>Location:</strong> Behind the main farmhouse</p>
+                    </div>
+                    <button type="button" class="secondary" onclick="alert('Navigating to Land Usage Planner for Homestead Plot.')">Edit/View Plan</button>
+                    <button type="button" class="danger" onclick="confirm('Are you sure you want to delete Homestead Plot?')">Delete</button>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

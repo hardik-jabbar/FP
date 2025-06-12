@@ -3,12 +3,12 @@ const API_BASE_URL = 'http://localhost:8000';
 
 // API endpoints
 const API_ENDPOINTS = {
-    tractors: '/marketplace/tractors',
-    parts: '/marketplace/parts',
-    featured: '/marketplace/featured',
-    user: '/users/me',
-    login: '/auth/login',
-    register: '/auth/register',
+    tractors: '/tractors', // MODIFIED
+    parts: '/parts', // MODIFIED
+    featured: '/marketplace/featured', // This path seems correct as per backend spec for featured items.
+    user: '/users/me', // Already updated in previous task
+    login: '/users/login/token', // Already updated in previous task
+    register: '/users/register', // Already updated in previous task
 };
 
 // Generic fetch function with error handling
