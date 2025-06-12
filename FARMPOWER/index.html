@@ -697,5 +697,188 @@
       // Update user count or other real-time stats
     });
   </script>
+
+  <!-- Chatbot UI -->
+  <div id="chatInitiatorButton" class="fixed bottom-8 right-8">
+    <button class="bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:bg-primary/90 transition-colors animate-float">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div id="chatWindow" class="hidden fixed bottom-4 right-4 left-4 w-auto md:w-96 md:left-auto md:bottom-24 md:right-8 h-[70vh] max-h-[600px] bg-secondary/80 backdrop-blur-md rounded-lg shadow-xl border border-border flex flex-col animate-scale-in">
+    <!-- Chat Header -->
+    <div class="flex items-center justify-between p-4 border-b border-border">
+      <h3 class="text-lg font-semibold text-foreground">FarmPower AI Assistant</h3>
+      <button id="closeChatButton" class="text-muted-foreground hover:text-foreground">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Message Display Area -->
+    <div id="messageDisplayArea" class="flex-1 p-4 space-y-4 overflow-y-auto">
+      <!-- Messages will be dynamically populated here -->
+    </div>
+
+    <!-- Message Input Area -->
+    <div class="p-4 border-t border-border">
+      <div class="flex items-center space-x-2">
+        <input type="text" id="messageInput" placeholder="Type your message..." class="flex-1 p-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary focus:border-primary outline-none text-foreground placeholder-muted-foreground">
+        <button id="sendMessageButton" class="bg-primary text-primary-foreground rounded-lg px-4 py-2 hover:bg-primary/90 transition-colors">
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- End Chatbot UI -->
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. DOM Element Selection
+      const chatInitiatorButton = document.getElementById('chatInitiatorButton');
+      const chatWindow = document.getElementById('chatWindow');
+      const closeChatButton = document.getElementById('closeChatButton');
+      const messageDisplayArea = document.getElementById('messageDisplayArea');
+      const messageInput = document.getElementById('messageInput');
+      const sendMessageButton = document.getElementById('sendMessageButton');
+
+      // FarmPower Knowledge Base
+      const farmPowerKnowledgeBase = [
+        {
+          keywords: ["what is farmpower", "farmpower explain", "about farmpower"],
+          answer: "FarmPower is an innovative platform designed to help you manage your farm efficiently, offering smart solutions for equipment, GPS tracking, service scheduling, and crop optimization."
+        },
+        {
+          keywords: ["crop yield", "improve yield", "increase production", "better harvest"],
+          answer: "FarmPower helps improve crop yield through precision agriculture tools like GPS tracking for optimal field coverage, data analytics for informed decisions, and efficient resource management."
+        },
+        {
+          keywords: ["gps", "gps tracking", "tractor tracking", "equipment location"],
+          answer: "Our GPS tracking system allows you to monitor your tractors and equipment in real-time, optimize routes, and ensure your machinery is always where it needs to be, enhancing security and efficiency."
+        },
+        {
+          keywords: ["services", "what services", "offerings"],
+          answer: "FarmPower offers a range of services including an equipment marketplace, parts market, service scheduling with certified technicians, GPS tracking, land mapping, and a crop profitability calculator."
+        },
+        {
+          keywords: ["land mapping", "field mapping", "how does mapping work"],
+          answer: "Land mapping with FarmPower involves creating detailed digital maps of your fields. This helps in planning planting patterns, managing irrigation, and applying fertilizers with precision for better resource use."
+        },
+        {
+          keywords: ["tractors", "buy tractor", "sell tractor", "tractor market"],
+          answer: "You can find a wide variety of new and used tractors in our Equipment Marketplace. We connect buyers and sellers for seamless transactions."
+        },
+        {
+          keywords: ["green farming", "sustainable agriculture", "eco-friendly farming"],
+          answer: "FarmPower supports sustainable agriculture by promoting efficient resource use, precision farming techniques to reduce waste, and tools that help in making environmentally conscious decisions."
+        },
+        {
+            keywords: ["crops", "manage crops", "crop planning"],
+            answer: "FarmPower provides tools like the Crop Calculator and insights from land mapping to help you plan your crops effectively, monitor their health, and maximize profitability."
+        },
+        {
+            keywords: ["help", "support", "assistance"],
+            answer: "I can help with information about FarmPower's features and general farming topics. If you need technical support, please visit our Help Center or contact our support team through the website."
+        },
+        {
+            keywords: ["hi", "hello", "hey", "greeting"],
+            answer: "Hello there! How can I assist you with FarmPower's smart farming solutions today?"
+        },
+        {
+          keywords: ["crop calculator", "profitability calculator", "calculate yield", "crop economics"],
+          answer: "Our Crop Calculator is a powerful tool designed to help you estimate potential crop yields and profitability. By inputting variables like crop type, acreage, input costs, and market prices, it provides valuable insights for planning and decision-making, empowering you to optimize your farming strategy with FarmPower!"
+        },
+        {
+          keywords: ["data security", "privacy", "is my data safe", "farm data", "secure"],
+          answer: "At FarmPower, we take data security and privacy very seriously. We use industry-standard security measures to protect your farm data. Our platform is designed to ensure your information is handled responsibly and confidentially. For more details, you can always review our Privacy Policy on the website."
+        }
+      ];
+
+      // Get Bot Response Logic
+      function getBotResponse(userInput) {
+        const lowerInput = userInput.toLowerCase();
+        for (const entry of farmPowerKnowledgeBase) {
+          for (const keyword of entry.keywords) {
+            if (lowerInput.includes(keyword.toLowerCase())) {
+              return entry.answer;
+            }
+          }
+        }
+        return "I'm here to help with FarmPower solutions. Can you ask another question about our platform or general farming topics? For specific account issues, please contact support.";
+      }
+
+      // 2. Toggle Chat Window & Initial Greeting
+      chatInitiatorButton.addEventListener('click', () => {
+        const isOpening = chatWindow.classList.toggle('hidden');
+        if (!isOpening) { // Window is now visible
+          messageInput.focus();
+          // Add initial greeting if no messages are present
+          if (messageDisplayArea.children.length === 0) {
+            setTimeout(() => {
+                addMessageToChat("Welcome to FarmPower! How can I assist you with our smart farming solutions today?", 'bot');
+            }, 300);
+          }
+        }
+      });
+
+      closeChatButton.addEventListener('click', () => {
+        chatWindow.classList.add('hidden');
+      });
+
+      // 3. Display Messages
+      function addMessageToChat(message, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('mb-2', 'p-3', 'rounded-lg', 'max-w-xs', 'animate-slide-in');
+
+        if (sender === 'user') {
+          messageDiv.classList.add('bg-primary', 'text-primary-foreground', 'ml-auto');
+          // Tailwind classes for alignment (rtl for text, flex justify-end for container if needed)
+          // For simplicity, direct style here, but could be a class:
+          messageDiv.style.textAlign = 'right';
+        } else {
+          messageDiv.classList.add('bg-muted', 'text-muted-foreground', 'mr-auto');
+           // Tailwind classes for alignment (ltr for text, flex justify-start for container if needed)
+          messageDiv.style.textAlign = 'left';
+        }
+
+        messageDiv.textContent = message;
+        messageDisplayArea.appendChild(messageDiv);
+
+        // Scroll to the latest message
+        messageDisplayArea.scrollTop = messageDisplayArea.scrollHeight;
+      }
+
+      // 4. Handle User Input
+      function handleSendMessage() {
+        const messageText = messageInput.value.trim();
+        if (messageText !== '') {
+          addMessageToChat(messageText, 'user');
+          messageInput.value = '';
+          messageInput.focus();
+
+          const botReply = getBotResponse(messageText);
+          setTimeout(() => {
+            addMessageToChat(botReply, 'bot');
+          }, 700); // Simulate bot thinking time
+        }
+      }
+
+      sendMessageButton.addEventListener('click', handleSendMessage);
+
+      messageInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault(); // Prevent form submission if it's part of a form
+          handleSendMessage();
+        }
+      });
+
+      // Note: Static example messages in HTML were removed.
+      // Initial greeting is handled when chat window opens.
+
+    });
+  </script>
 </body>
 </html>
