@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sustainability - FarmPower</title>
+  <meta name="description" content="Learn about FarmPower's commitment to sustainable farming practices">
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#ffffff',
+            foreground: '#000000',
+            primary: {
+              DEFAULT: '#2563eb',
+              foreground: '#ffffff',
+            },
+            secondary: {
+              DEFAULT: '#f3f4f6',
+            },
+            border: '#e5e7eb',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+
+  <style type="text/css">
+    /* Base styles */
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Utility classes */
+    .btn-icon {
+      @apply p-2 hover:bg-secondary rounded-lg transition-colors;
+    }
+
+    .nav-link {
+      @apply text-foreground/80 hover:text-foreground transition-colors;
+    }
+
+    /* Animations */
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 0.3s ease-out;
+    }
+
+    .animate-slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scaleIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      0% { transform: translateX(-20px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9CA3AF;
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground">
+<!-- Navigation Header -->
+<header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+  <div class="container mx-auto px-4 md:px-6">
+    <nav class="flex items-center justify-between py-4">
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center space-x-2">
+        <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
+        <span class="text-xl font-bold">FarmPower</span>
+      </a>
+
+      <!-- Main Navigation -->
+      <ul class="hidden md:flex items-center space-x-8">
+        <li>
+          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Equipment Market
+          </a>
+        </li>
+        <li>
+          <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Parts Market
+          </a>
+        </li>
+        <li>
+          <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Service
+          </a>
+        </li>
+        <li>
+          <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            GPS Tracking
+          </a>
+        </li>
+        <li>
+          <a href="crop-calculator.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Crop Calculator
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="notifications.html" class="relative p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="notificationCount" class="absolute top-0 right-0 h-5 w-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">0</span>
+        </a>
+
+        <!-- User Dropdown (when logged in) -->
+        <div id="userMenu" class="relative hidden">
+          <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-secondary rounded-lg p-2">
+            <img id="userAvatar" src="assets/images/avatar-placeholder.png" alt="User Avatar" class="h-8 w-8 rounded-full">
+            <span id="userName" class="text-sm font-medium">User Name</span>
+          </button>
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+            <a href="profile.html" class="block px-4 py-2 text-sm hover:bg-secondary">Profile</a>
+            <a href="my-equipment.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Equipment</a>
+            <a href="my-services.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Services</a>
+            <a href="settings.html" class="block px-4 py-2 text-sm hover:bg-secondary">Settings</a>
+            <hr class="my-1 border-border">
+            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-secondary">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth Buttons (when logged out) -->
+        <div id="authButtons" class="flex items-center space-x-4">
+          <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
+          <a href="register.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            Register
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="md:hidden fixed inset-y-0 right-0 w-full max-w-sm bg-background border-l border-border transform translate-x-full transition-transform duration-200 ease-in-out">
+    <div class="flex flex-col h-full">
+      <div class="flex items-center justify-between p-4 border-b border-border">
+        <span class="text-lg font-bold">Menu</span>
+        <button onclick="toggleMobileMenu()" class="p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-4">
+        <ul class="space-y-4">
+          <li>
+            <a href="shop.html" class="block text-lg hover:text-primary">Equipment Market</a>
+          </li>
+          <li>
+            <a href="parts-marketplace.html" class="block text-lg hover:text-primary">Parts Market</a>
+          </li>
+          <li>
+            <a href="service-scheduling.html" class="block text-lg hover:text-primary">Service</a>
+          </li>
+          <li>
+            <a href="gps-tracking.html" class="block text-lg hover:text-primary">GPS Tracking</a>
+          </li>
+          <li>
+            <a href="crop-calculator.html" class="block text-lg hover:text-primary">Crop Calculator</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Toggle mobile menu
+  function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenu.classList.toggle('translate-x-full');
+  }
+
+  // Toggle user dropdown
+  function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    const userMenu = document.getElementById('userMenu');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (!userMenu.contains(e.target)) {
+      userDropdown.classList.add('hidden');
+    }
+  });
+
+  // Handle authentication state
+  function updateAuthState(isLoggedIn, userData = null) {
+    const userMenu = document.getElementById('userMenu');
+    const authButtons = document.getElementById('authButtons');
+    
+    if (isLoggedIn && userData) {
+      userMenu.classList.remove('hidden');
+      authButtons.classList.add('hidden');
+      
+      // Update user info
+      document.getElementById('userName').textContent = userData.name;
+      if (userData.avatar) {
+        document.getElementById('userAvatar').src = userData.avatar;
+      }
+    } else {
+      userMenu.classList.add('hidden');
+      authButtons.classList.remove('hidden');
+    }
+  }
+
+  // Check authentication state on page load
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/user/me');
+      if (response.ok) {
+        const userData = await response.json();
+        updateAuthState(true, userData);
+      } else {
+        updateAuthState(false);
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      updateAuthState(false);
+    }
+  }
+
+  // Logout function
+  async function logout() {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      updateAuthState(false);
+      window.location.href = "login.html";
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  }
+
+  // Initialize
+  checkAuth();
+</script> 
+  <!-- Include Header -->
+  <div id="header-placeholder"></div>
+
+  <!-- Main Content -->
+  <main>
+    
+    <!-- Sustainability Header -->
+    <section class="bg-secondary/50 py-10 md:py-16">
+      <div class="container mx-auto px-4 md:px-6">
+        <div class="flex flex-col items-center text-center">
+          <h1 class="text-3xl md:text-5xl font-medium tracking-tight animate-fade-in">Our Warranty Commitment</h1>
+          <p class="mt-4 max-w-2xl text-muted-foreground md:text-lg animate-fade-in">
+            At TractorHub, we stand by the quality and durability of our farming tractors. Our comprehensive warranty ensures that you receive reliable support and protection for your investment.
+
+
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sustainability Overview -->
+    <section class="py-16 md:py-24 bg-background">
+      <div class="container mx-auto px-4 md:px-6 max-w-4xl">
+        <div class="mb-16">
+          <div class="overflow-hidden rounded-xl bg-secondary/20">
+            <div class="grid grid-cols-1 md:grid-cols-2">
+              <div class="p-8 md:p-10">
+                <h2 class="text-2xl font-medium mb-4">Warranty Coverage</h2>
+                <p class="text-muted-foreground mb-4">At TractorHub, sustainability isn't just a trend—it's central to our mission. We believe in creating products that not only enhance your life but also respect our planet and its communities.</p>
+                <p class="text-muted-foreground">Our sustainability journey is ongoing and transparent. We're committed to continuous improvement in every aspect of our business, from sourcing materials to packaging and delivery.</p>
+              </div>
+              <div class="h-64 md:h-auto bg-secondary">
+                <img 
+                  src="https://images.unsplash.com/photo-1429991889170-afd56b2a1210?q=80&w=3174&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                  alt="Sustainable materials" 
+                  class="w-full h-full object-cover"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sustainable Materials -->
+        <div class="space-y-16">
+          <div>
+            <h2 class="text-2xl font-medium mb-8 pb-2 border-b border-border">Sustainable Materials</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div class="space-y-4 animate-slide-up">
+                <div class="h-12 w-12 bg-secondary/70 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path>
+                    <path d="M16.5 9.4 7.55 4.24"></path>
+                    <polyline points="3.29 7 12 12 20.71 7"></polyline>
+                    <line x1="12" y1="22" x2="12" y2="12"></line>
+                    <circle cx="18.5" cy="15.5" r="2.5"></circle>
+                    <path d="M20.27 17.27 22 19"></path>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-medium">Engine & Powertrain</h3>
+                <p class="text-muted-foreground">Engine & Powertrain low-impact materials to reduce our environmental footprint while maintaining quality.</p>
+              </div>
+              
+              <div class="space-y-4 animate-slide-up" style="animation-delay: 0.1s;">
+                <div class="h-12 w-12 bg-secondary/70 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-medium">Local Sourcing</h3>
+                <p class="text-muted-foreground">Whenever possible, we source materials locally to reduce transportation emissions and support regional economies.</p>
+              </div>
+              
+              <div class="space-y-4 animate-slide-up" style="animation-delay: 0.2s;">
+                <div class="h-12 w-12 bg-secondary/70 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-medium">Certified Materials</h3>
+                <p class="text-muted-foreground">We use materials certified by recognized sustainability organizations like GOTS for organic textiles and FSC for responsibly harvested wood products.</p>
+              </div>
+            </div>
+            
+            <div class="mt-10 bg-muted rounded-xl p-6">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="font-medium mb-2">Our 2025 Material Goals</h4>
+                  <ul class="list-disc list-inside text-muted-foreground space-y-1">
+                    <li>100% compliance with Tier 4 emissions standards</li>
+                    <li>80% of all materials sourced locally to support farmers and regional economies</li>
+                    <li>50% increase in fuel efficiency across all new tractor models</li>
+                    <li>Full transparency in manufacturing processes and material sourcing</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Ethical Production -->
+          <div>
+            <h2 class="text-2xl font-medium mb-8 pb-2 border-b border-border">Ethical Manufacturing</h2>
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <div>
+                <h3 class="text-xl font-medium mb-4">Fair Labor Practices</h3>
+                <p class="text-muted-foreground mb-4">We partner only with manufacturers who provide fair wages, safe working conditions, and respect workers' rights. We regularly audit our manufacturing partners to ensure compliance with our ethical standards.</p>
+                <p class="text-muted-foreground">All our manufacturing partners must adhere to or exceed local labor laws and safety regulations. We prioritize long-term relationships with suppliers who share our commitment to worker well-being.</p>
+              </div>
+              
+              <div>
+                <h3 class="text-xl font-medium mb-4">Transparency & Accountability</h3>
+                <p class="text-muted-foreground mb-4">We are committed to full transparency in our supply chain. From raw materials to final assembly, we ensure every step meets our rigorous quality and ethical guidelines.</p>
+                <p class="text-muted-foreground">Our annual Sustainability Report details our progress, challenges, and future goals. We hold ourselves accountable by setting measurable targets and reporting honestly on our achievements and areas for improvement.</p>
+              </div>
+            </div>
+            
+            <div class="mt-8 overflow-hidden rounded-lg">
+              <img 
+                src="https://images.unsplash.com/photo-1594771804886-a933bb2d609b?q=80&w=2964&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                alt="Ethical manufacturing" 
+                class="w-full h-64 object-cover"
+              >
+            </div>
+          </div>
+          
+          <!-- Eco-friendly Packaging -->
+          <div>
+            <h2 class="text-2xl font-medium mb-8 pb-2 border-b border-border">Eco-friendly Packaging</h2>
+            <div class="flex flex-col md:flex-row gap-8 items-center">
+              <div class="md:w-1/2">
+                <p class="text-muted-foreground mb-4">Packaging waste is a significant environmental challenge. At Essentials, we're committed to minimizing this impact through thoughtful design and material choices.</p>
+                <ul class="space-y-3">
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>Recycled & Recyclable:</strong> Our boxes are made from 100% post-consumer recycled cardboard and are fully recyclable.</span>
+                  </li>
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>Plastic-Free:</strong> We use paper tape, paper cushioning materials, and avoid plastic fillers in our packaging.</span>
+                  </li>
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>Right-Sized:</strong> We optimize our packaging sizes to reduce waste and minimize shipping volume.</span>
+                  </li>
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>Biodegradable:</strong> Any necessary protective materials are biodegradable and compostable.</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div class="md:w-1/2">
+                <img 
+                  src="https://images.unsplash.com/photo-1520857622823-2df34928e183?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                  alt="Eco-friendly packaging" 
+                  class="rounded-lg"
+                >
+              </div>
+            </div>
+          </div>
+          
+          <!-- Carbon Footprint Reduction -->
+          <div>
+            <h2 class="text-2xl font-medium mb-8 pb-2 border-b border-border">Carbon Footprint Reduction</h2>
+            <div class="space-y-6">
+              <p class="text-muted-foreground">Climate change is one of the most pressing challenges of our time. We're taking concrete steps to measure, reduce, and offset our carbon emissions:</p>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-secondary/30 rounded-lg p-6">
+                  <h3 class="text-lg font-medium mb-3">Measuring Our Impact</h3>
+                  <p class="text-muted-foreground">We conduct annual carbon footprint assessments across our entire supply chain, from raw material production to product delivery and end-of-life disposal.</p>
+                </div>
+                
+                <div class="bg-secondary/30 rounded-lg p-6">
+                  <h3 class="text-lg font-medium mb-3">Energy Efficiency</h3>
+                  <p class="text-muted-foreground">Our offices and warehouses run on renewable energy where available, and we've implemented energy-efficient lighting, heating, and cooling systems.</p>
+                </div>
+                
+                <div class="bg-secondary/30 rounded-lg p-6">
+                  <h3 class="text-lg font-medium mb-3">Low-Impact Shipping</h3>
+                  <p class="text-muted-foreground">We optimize shipping routes, consolidate orders when possible, and are working toward carbon-neutral shipping options for all deliveries.</p>
+                </div>
+                
+                <div class="bg-secondary/30 rounded-lg p-6">
+                  <h3 class="text-lg font-medium mb-3">Carbon Offsetting</h3>
+                  <p class="text-muted-foreground">For emissions we can't yet eliminate, we invest in verified carbon offset projects focusing on renewable energy, reforestation, and community development.</p>
+                </div>
+              </div>
+              
+              <div class="bg-muted rounded-xl p-6 mt-6">
+                <h4 class="font-medium mb-2">Our Carbon Commitment</h4>
+                <p class="text-muted-foreground mb-4">We've pledged to reduce our absolute carbon emissions by 50% by 2030 and achieve carbon neutrality by 2040, in line with science-based targets to limit global warming to 1.5°C.</p>
+                <div class="h-6 bg-white rounded-full overflow-hidden">
+                  <div class="h-full bg-green-500 w-1/4 rounded-full relative">
+                    <span class="absolute inset-0 flex items-center justify-center text-xs text-white font-medium">25% Complete</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Waste Reduction & Circularity -->
+          <div>
+            <h2 class="text-2xl font-medium mb-8 pb-2 border-b border-border">Longevity & Circular Economy</h2>
+            <div class="space-y-6">
+              <p class="text-muted-foreground">We're moving beyond the traditional take-make-dispose model toward a circular economy approach that keeps materials in use and eliminates waste:</p>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="space-y-4 animate-slide-up">
+                  <div class="h-12 w-12 bg-secondary/70 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-medium">Product Durability</h3>
+                  <p class="text-muted-foreground">Our tractors are engineered for long-term durability, reducing the need for frequent replacements.</p>
+                </div>
+                
+                <div class="space-y-4 animate-slide-up" style="animation-delay: 0.1s;">
+                  <div class="h-12 w-12 bg-secondary/70 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-medium">Repair Program</h3>
+                  <p class="text-muted-foreground">We offer extensive repair and maintenance services, ensuring your tractor stays in peak condition for years to come.</p>
+                </div>
+                
+                <div class="space-y-4 animate-slide-up" style="animation-delay: 0.2s;">
+                  <div class="h-12 w-12 bg-secondary/70 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2v4"></path>
+                      <path d="M12 18v4"></path>
+                      <path d="M4.93 4.93l2.83 2.83"></path>
+                      <path d="M16.24 16.24l2.83 2.83"></path>
+                      <path d="M2 12h4"></path>
+                      <path d="M18 12h4"></path>
+                      <path d="M4.93 19.07l2.83-2.83"></path>
+                      <path d="M16.24 7.76l2.83-2.83"></path>
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-medium">Trade-In & Recycling Program</h3>
+                  <p class="text-muted-foreground">Our take-back initiative allows customers to trade in older tractors for recycling or refurbishing, reducing waste and keeping materials in use.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Our Impact -->
+        <div class="mt-20 border-t border-border pt-12">
+          <h2 class="text-2xl font-medium mb-8 text-center">Our Impact</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div class="bg-secondary/20 rounded-xl p-6">
+              <h3 class="text-4xl font-medium mb-2">75%</h3>
+              <p class="text-muted-foreground">Reduction in plastic packaging since 2020</p>
+            </div>
+            
+            <div class="bg-secondary/20 rounded-xl p-6">
+              <h3 class="text-4xl font-medium mb-2">40%</h3>
+              <p class="text-muted-foreground">of tractor components now made with recycled materials</p>
+            </div>
+            
+            <div class="bg-secondary/20 rounded-xl p-6">
+              <h3 class="text-4xl font-medium mb-2">1,200</h3>
+              <p class="text-muted-foreground">Trees planted through our reforestation initiatives</p>
+            </div>
+          </div>
+          
+          <p class="text-center text-muted-foreground mt-10">
+            At TractorHub, we’re committed to continuous innovation and transparency, ensuring that our farming tractors remain at the forefront of quality, efficiency, and sustainability.</p>
+          
+          <div class="mt-10 text-center">
+            <a href="contact.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-primary-foreground shadow transition-colors hover:bg-opacity-90">
+              Contact Us With Questions
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  
+  </main>
+
+  <!-- Include Footer -->
+  <div id="footer-placeholder"></div>
+
+  <script>
+    // Load header and footer
+    fetch('/FARMPOWER/components/header.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('header-placeholder').innerHTML = data;
+      });
+
+    fetch('/FARMPOWER/components/footer.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('footer-placeholder').innerHTML = data;
+      });
+  </script>
+<!-- Footer -->
+<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <!-- Company Info -->
+      <div>
+        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+          <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+          <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+          <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Support</h3>
+        <ul class="space-y-2">
+          <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+          <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+          <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+          <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+        </ul>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+        <form class="space-y-2">
+          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 border-t border-dark-300">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+          <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+          <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+          <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Newsletter form submission
+  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.querySelector('input[type="email"]').value;
+    
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        alert('Thank you for subscribing!');
+        e.target.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
+  });
+</script> 
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parts Marketplace - FarmPower</title>
+  <meta name="description" content="Buy and sell tractor parts with our secure marketplace">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Add Socket.io for real-time updates -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <!-- Add Auth0 for authentication -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+</head>
+<body class="bg-background text-foreground">
+<!-- Navigation Header -->
+<header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+  <div class="container mx-auto px-4 md:px-6">
+    <nav class="flex items-center justify-between py-4">
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center space-x-2">
+        <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
+        <span class="text-xl font-bold">FarmPower</span>
+      </a>
+
+      <!-- Main Navigation -->
+      <ul class="hidden md:flex items-center space-x-8">
+        <li>
+          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Equipment Market
+          </a>
+        </li>
+        <li>
+          <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Parts Market
+          </a>
+        </li>
+        <li>
+          <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Service
+          </a>
+        </li>
+        <li>
+          <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            GPS Tracking
+          </a>
+        </li>
+        <li>
+          <a href="crop-calculator.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Crop Calculator
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="notifications.html" class="relative p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="notificationCount" class="absolute top-0 right-0 h-5 w-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">0</span>
+        </a>
+
+        <!-- User Dropdown (when logged in) -->
+        <div id="userMenu" class="relative hidden">
+          <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-secondary rounded-lg p-2">
+            <img id="userAvatar" src="assets/images/avatar-placeholder.png" alt="User Avatar" class="h-8 w-8 rounded-full">
+            <span id="userName" class="text-sm font-medium">User Name</span>
+          </button>
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+            <a href="profile.html" class="block px-4 py-2 text-sm hover:bg-secondary">Profile</a>
+            <a href="my-equipment.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Equipment</a>
+            <a href="my-services.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Services</a>
+            <a href="settings.html" class="block px-4 py-2 text-sm hover:bg-secondary">Settings</a>
+            <hr class="my-1 border-border">
+            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-secondary">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth Buttons (when logged out) -->
+        <div id="authButtons" class="flex items-center space-x-4">
+          <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
+          <a href="register.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            Register
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="md:hidden fixed inset-y-0 right-0 w-full max-w-sm bg-background border-l border-border transform translate-x-full transition-transform duration-200 ease-in-out">
+    <div class="flex flex-col h-full">
+      <div class="flex items-center justify-between p-4 border-b border-border">
+        <span class="text-lg font-bold">Menu</span>
+        <button onclick="toggleMobileMenu()" class="p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-4">
+        <ul class="space-y-4">
+          <li>
+            <a href="shop.html" class="block text-lg hover:text-primary">Equipment Market</a>
+          </li>
+          <li>
+            <a href="parts-marketplace.html" class="block text-lg hover:text-primary">Parts Market</a>
+          </li>
+          <li>
+            <a href="service-scheduling.html" class="block text-lg hover:text-primary">Service</a>
+          </li>
+          <li>
+            <a href="gps-tracking.html" class="block text-lg hover:text-primary">GPS Tracking</a>
+          </li>
+          <li>
+            <a href="crop-calculator.html" class="block text-lg hover:text-primary">Crop Calculator</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Toggle mobile menu
+  function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenu.classList.toggle('translate-x-full');
+  }
+
+  // Toggle user dropdown
+  function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    const userMenu = document.getElementById('userMenu');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (!userMenu.contains(e.target)) {
+      userDropdown.classList.add('hidden');
+    }
+  });
+
+  // Handle authentication state
+  function updateAuthState(isLoggedIn, userData = null) {
+    const userMenu = document.getElementById('userMenu');
+    const authButtons = document.getElementById('authButtons');
+    
+    if (isLoggedIn && userData) {
+      userMenu.classList.remove('hidden');
+      authButtons.classList.add('hidden');
+      
+      // Update user info
+      document.getElementById('userName').textContent = userData.name;
+      if (userData.avatar) {
+        document.getElementById('userAvatar').src = userData.avatar;
+      }
+    } else {
+      userMenu.classList.add('hidden');
+      authButtons.classList.remove('hidden');
+    }
+  }
+
+  // Check authentication state on page load
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/user/me');
+      if (response.ok) {
+        const userData = await response.json();
+        updateAuthState(true, userData);
+      } else {
+        updateAuthState(false);
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      updateAuthState(false);
+    }
+  }
+
+  // Logout function
+  async function logout() {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      updateAuthState(false);
+      window.location.href = "login.html";
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  }
+
+  // Initialize
+  checkAuth();
+</script> 
+  <!-- Navigation header remains the same -->
+
+  <main class="container mx-auto px-4 md:px-6 py-12">
+    <!-- Parts Marketplace Header -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold">Parts Marketplace</h1>
+        <p class="text-muted-foreground mt-2">Buy and sell tractor parts with our secure marketplace</p>
+      </div>
+      
+      <button id="listPartBtn" onclick="showPartForm()" class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-primary-foreground shadow hover:bg-opacity-90">
+        List Part
+        <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Filters and Parts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <!-- Filters Sidebar -->
+      <div class="space-y-6">
+        <div class="bg-secondary/10 rounded-lg p-4">
+          <h3 class="text-lg font-semibold mb-4">Filters</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Category</label>
+              <select id="categoryFilter" class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+                <option value="">All Categories</option>
+                <option value="engine">Engine Parts</option>
+                <option value="transmission">Transmission</option>
+                <option value="hydraulics">Hydraulics</option>
+                <option value="electrical">Electrical</option>
+                <option value="body">Body Parts</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-1">Tractor Brand</label>
+              <select id="brandFilter" class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+                <option value="">All Brands</option>
+                <option value="john-deere">John Deere</option>
+                <option value="massey-ferguson">Massey Ferguson</option>
+                <option value="new-holland">New Holland</option>
+                <option value="kubota">Kubota</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-1">Condition</label>
+              <select id="conditionFilter" class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+                <option value="">All Conditions</option>
+                <option value="new">New</option>
+                <option value="used">Used</option>
+                <option value="refurbished">Refurbished</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-1">Price Range</label>
+              <div class="flex items-center space-x-2">
+                <input type="number" id="minPrice" placeholder="Min" class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+                <span>-</span>
+                <input type="number" id="maxPrice" placeholder="Max" class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-1">Sort By</label>
+              <select id="sortBy" class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+                <option value="newest">Newest First</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="popular">Most Popular</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compatibility Checker -->
+        <div class="bg-secondary/10 rounded-lg p-4">
+          <h3 class="text-lg font-semibold mb-4">Compatibility Checker</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Tractor Model</label>
+              <select id="tractorModel" class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+                <option value="">Select Model</option>
+                <!-- Will be populated based on selected brand -->
+              </select>
+            </div>
+            <button onclick="checkCompatibility()" class="w-full px-4 py-2 rounded-lg bg-primary text-primary-foreground shadow hover:bg-opacity-90">
+              Check Compatibility
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parts Grid -->
+      <div class="lg:col-span-3">
+        <div id="partsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Part cards will be dynamically populated here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- List Part Modal -->
+    <div id="partModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div class="bg-background rounded-lg p-6 max-w-lg w-full mx-4">
+        <h2 class="text-2xl font-bold mb-4">List a Part</h2>
+        <form id="partForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Part Name</label>
+            <input type="text" name="name" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Category</label>
+            <select name="category" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+              <option value="engine">Engine Parts</option>
+              <option value="transmission">Transmission</option>
+              <option value="hydraulics">Hydraulics</option>
+              <option value="electrical">Electrical</option>
+              <option value="body">Body Parts</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Compatible Brands</label>
+            <div class="space-y-2">
+              <label class="flex items-center space-x-2">
+                <input type="checkbox" name="brands[]" value="john-deere">
+                <span>John Deere</span>
+              </label>
+              <label class="flex items-center space-x-2">
+                <input type="checkbox" name="brands[]" value="massey-ferguson">
+                <span>Massey Ferguson</span>
+              </label>
+              <label class="flex items-center space-x-2">
+                <input type="checkbox" name="brands[]" value="new-holland">
+                <span>New Holland</span>
+              </label>
+              <label class="flex items-center space-x-2">
+                <input type="checkbox" name="brands[]" value="kubota">
+                <span>Kubota</span>
+              </label>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Compatible Models</label>
+            <input type="text" name="models" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2" placeholder="e.g., 6430, 7230, 8430 (comma separated)">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Condition</label>
+            <select name="condition" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+              <option value="new">New</option>
+              <option value="used">Used</option>
+              <option value="refurbished">Refurbished</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Price</label>
+            <input type="number" name="price" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Description</label>
+            <textarea name="description" rows="4" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2"></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Images</label>
+            <input type="file" name="images" multiple accept="image/*" class="w-full">
+          </div>
+          
+          <div class="flex justify-end space-x-4 mt-6">
+            <button type="button" onclick="hidePartForm()" class="px-4 py-2 rounded-lg border border-border hover:bg-secondary">
+              Cancel
+            </button>
+            <button type="submit" class="px-6 py-2 rounded-lg bg-primary text-primary-foreground shadow hover:bg-opacity-90">
+              List Part
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer remains the same -->
+
+  <script>
+    // Initialize Socket.io connection
+    const socket = io('http://localhost:3000');
+
+    // Part card template
+    function createPartCard(part) {
+      return `
+        <div class="group relative overflow-hidden rounded-lg border border-border bg-background shadow-sm transition-all hover:shadow-md">
+          <div class="aspect-square overflow-hidden">
+            <img src="${part.images[0]}" alt="${part.name}" class="h-full w-full object-cover transition-transform group-hover:scale-105">
+          </div>
+          <div class="p-4">
+            <h3 class="font-medium">${part.name}</h3>
+            <p class="text-sm text-muted-foreground mt-1">${part.category}</p>
+            <p class="mt-1 font-medium">₹${part.price.toLocaleString()}</p>
+            <div class="mt-2 flex items-center text-sm text-muted-foreground">
+              <span class="inline-flex items-center rounded-full bg-secondary/50 px-2 py-1 text-xs">
+                ${part.condition}
+              </span>
+              <span class="ml-2">${part.compatibleBrands.join(', ')}</span>
+            </div>
+          </div>
+          <button onclick="viewPart(${part.id})" class="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 bg-black/50 flex items-center justify-center text-white font-medium transition-opacity">
+            View Details
+          </button>
+        </div>
+      `;
+    }
+
+    // Fetch and display parts
+    async function fetchParts(filters = {}) {
+      try {
+        const queryParams = new URLSearchParams(filters);
+        const response = await fetch(`/api/parts?${queryParams}`);
+        const data = await response.json();
+        
+        const grid = document.getElementById('partsGrid');
+        grid.innerHTML = data.map(part => createPartCard(part)).join('');
+      } catch (error) {
+        console.error('Error fetching parts:', error);
+      }
+    }
+
+    // List new part
+    const partForm = document.getElementById('partForm');
+    partForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      try {
+        const formData = new FormData(partForm);
+        const response = await fetch('/api/parts', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          hidePartForm();
+          fetchParts();
+        }
+      } catch (error) {
+        console.error('Error listing part:', error);
+      }
+    });
+
+    // Filter handling
+    const filters = document.querySelectorAll('select, input[type="number"]');
+    filters.forEach(filter => {
+      filter.addEventListener('change', () => {
+        const filterData = {
+          category: document.getElementById('categoryFilter').value,
+          brand: document.getElementById('brandFilter').value,
+          condition: document.getElementById('conditionFilter').value,
+          minPrice: document.getElementById('minPrice').value,
+          maxPrice: document.getElementById('maxPrice').value,
+          sort: document.getElementById('sortBy').value
+        };
+        fetchParts(filterData);
+      });
+    });
+
+    // Compatibility checker
+    async function checkCompatibility() {
+      const tractorModel = document.getElementById('tractorModel').value;
+      if (!tractorModel) return;
+      
+      try {
+        const response = await fetch(`/api/parts/compatibility?model=${tractorModel}`);
+        const data = await response.json();
+        
+        // Update parts grid to show only compatible parts
+        const grid = document.getElementById('partsGrid');
+        grid.innerHTML = data.compatibleParts.map(part => createPartCard(part)).join('');
+      } catch (error) {
+        console.error('Error checking compatibility:', error);
+      }
+    }
+
+    // Brand-model relationship
+    document.getElementById('brandFilter').addEventListener('change', async (e) => {
+      const brand = e.target.value;
+      if (!brand) return;
+      
+      try {
+        const response = await fetch(`/api/parts/models?brand=${brand}`);
+        const data = await response.json();
+        
+        const modelSelect = document.getElementById('tractorModel');
+        modelSelect.innerHTML = data.models.map(model => 
+          `<option value="${model.id}">${model.name}</option>`
+        ).join('');
+      } catch (error) {
+        console.error('Error fetching models:', error);
+      }
+    });
+
+    // Real-time updates
+    socket.on('part-update', (data) => {
+      fetchParts();
+    });
+
+    // Modal controls
+    function showPartForm() {
+      document.getElementById('partModal').classList.remove('hidden');
+    }
+
+    function hidePartForm() {
+      document.getElementById('partModal').classList.add('hidden');
+    }
+
+    // View part details
+    function viewPart(id) {
+      window.location.href = `/part/${id}`;
+    }
+
+    // Initialize page
+    fetchParts();
+  </script>
+<!-- Footer -->
+<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <!-- Company Info -->
+      <div>
+        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+          <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+          <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+          <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Support</h3>
+        <ul class="space-y-2">
+          <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+          <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+          <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+          <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+        </ul>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+        <form class="space-y-2">
+          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 border-t border-dark-300">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+          <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+          <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+          <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Newsletter form submission
+  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.querySelector('input[type="email"]').value;
+    
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        alert('Thank you for subscribing!');
+        e.target.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
+  });
+</script> 
+</body>
+</html> 

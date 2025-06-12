@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Scheduling - FarmPower</title>
+  <meta name="description" content="Schedule maintenance and repairs for your farming equipment">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Add Flatpickr for date/time selection -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Add Socket.io for real-time updates -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <!-- Add Auth0 for authentication -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+</head>
+<body class="bg-background text-foreground">
+<!-- Navigation Header -->
+<header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+  <div class="container mx-auto px-4 md:px-6">
+    <nav class="flex items-center justify-between py-4">
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center space-x-2">
+        <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
+        <span class="text-xl font-bold">FarmPower</span>
+      </a>
+
+      <!-- Main Navigation -->
+      <ul class="hidden md:flex items-center space-x-8">
+        <li>
+          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Equipment Market
+          </a>
+        </li>
+        <li>
+          <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Parts Market
+          </a>
+        </li>
+        <li>
+          <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Service
+          </a>
+        </li>
+        <li>
+          <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            GPS Tracking
+          </a>
+        </li>
+        <li>
+          <a href="crop-calculator.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Crop Calculator
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="notifications.html" class="relative p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="notificationCount" class="absolute top-0 right-0 h-5 w-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">0</span>
+        </a>
+
+        <!-- User Dropdown (when logged in) -->
+        <div id="userMenu" class="relative hidden">
+          <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-secondary rounded-lg p-2">
+            <img id="userAvatar" src="assets/images/avatar-placeholder.png" alt="User Avatar" class="h-8 w-8 rounded-full">
+            <span id="userName" class="text-sm font-medium">User Name</span>
+          </button>
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+            <a href="profile.html" class="block px-4 py-2 text-sm hover:bg-secondary">Profile</a>
+            <a href="my-equipment.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Equipment</a>
+            <a href="my-services.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Services</a>
+            <a href="settings.html" class="block px-4 py-2 text-sm hover:bg-secondary">Settings</a>
+            <hr class="my-1 border-border">
+            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-secondary">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth Buttons (when logged out) -->
+        <div id="authButtons" class="flex items-center space-x-4">
+          <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
+          <a href="register.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            Register
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="md:hidden fixed inset-y-0 right-0 w-full max-w-sm bg-background border-l border-border transform translate-x-full transition-transform duration-200 ease-in-out">
+    <div class="flex flex-col h-full">
+      <div class="flex items-center justify-between p-4 border-b border-border">
+        <span class="text-lg font-bold">Menu</span>
+        <button onclick="toggleMobileMenu()" class="p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-4">
+        <ul class="space-y-4">
+          <li>
+            <a href="shop.html" class="block text-lg hover:text-primary">Equipment Market</a>
+          </li>
+          <li>
+            <a href="parts-marketplace.html" class="block text-lg hover:text-primary">Parts Market</a>
+          </li>
+          <li>
+            <a href="service-scheduling.html" class="block text-lg hover:text-primary">Service</a>
+          </li>
+          <li>
+            <a href="gps-tracking.html" class="block text-lg hover:text-primary">GPS Tracking</a>
+          </li>
+          <li>
+            <a href="crop-calculator.html" class="block text-lg hover:text-primary">Crop Calculator</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Toggle mobile menu
+  function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenu.classList.toggle('translate-x-full');
+  }
+
+  // Toggle user dropdown
+  function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    const userMenu = document.getElementById('userMenu');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (!userMenu.contains(e.target)) {
+      userDropdown.classList.add('hidden');
+    }
+  });
+
+  // Handle authentication state
+  function updateAuthState(isLoggedIn, userData = null) {
+    const userMenu = document.getElementById('userMenu');
+    const authButtons = document.getElementById('authButtons');
+    
+    if (isLoggedIn && userData) {
+      userMenu.classList.remove('hidden');
+      authButtons.classList.add('hidden');
+      
+      // Update user info
+      document.getElementById('userName').textContent = userData.name;
+      if (userData.avatar) {
+        document.getElementById('userAvatar').src = userData.avatar;
+      }
+    } else {
+      userMenu.classList.add('hidden');
+      authButtons.classList.remove('hidden');
+    }
+  }
+
+  // Check authentication state on page load
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/user/me');
+      if (response.ok) {
+        const userData = await response.json();
+        updateAuthState(true, userData);
+      } else {
+        updateAuthState(false);
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      updateAuthState(false);
+    }
+  }
+
+  // Logout function
+  async function logout() {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      updateAuthState(false);
+      window.location.href = "login.html";
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  }
+
+  // Initialize
+  checkAuth();
+</script> 
+  <!-- Navigation header remains the same -->
+
+  <main class="container mx-auto px-4 md:px-6 py-12">
+    <!-- Service Scheduling Header -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold">Service Scheduling</h1>
+        <p class="text-muted-foreground mt-2">Schedule maintenance and repairs for your equipment</p>
+      </div>
+      
+      <button id="scheduleServiceBtn" onclick="showServiceForm()" class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-primary-foreground shadow hover:bg-opacity-90">
+        Schedule Service
+        <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Service Calendar and Bookings -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Upcoming Services -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-secondary/10 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Upcoming Services</h2>
+          <div id="upcomingServices" class="space-y-4">
+            <!-- Service items will be dynamically populated here -->
+          </div>
+        </div>
+
+        <!-- Service History -->
+        <div class="bg-secondary/10 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Service History</h2>
+          <div id="serviceHistory" class="space-y-4">
+            <!-- Service history items will be dynamically populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Technician Availability -->
+      <div class="space-y-6">
+        <div class="bg-secondary/10 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Technician Availability</h2>
+          <div id="technicianAvailability" class="space-y-4">
+            <!-- Technician availability will be dynamically populated here -->
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="bg-secondary/10 rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Service Stats</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 bg-background rounded-lg">
+              <p class="text-sm text-muted-foreground">Completed Services</p>
+              <p class="text-2xl font-semibold mt-1" id="completedServices">0</p>
+            </div>
+            <div class="p-4 bg-background rounded-lg">
+              <p class="text-sm text-muted-foreground">Upcoming Services</p>
+              <p class="text-2xl font-semibold mt-1" id="upcomingCount">0</p>
+            </div>
+            <div class="p-4 bg-background rounded-lg">
+              <p class="text-sm text-muted-foreground">Average Rating</p>
+              <p class="text-2xl font-semibold mt-1" id="averageRating">0.0</p>
+            </div>
+            <div class="p-4 bg-background rounded-lg">
+              <p class="text-sm text-muted-foreground">Response Time</p>
+              <p class="text-2xl font-semibold mt-1" id="responseTime">0h</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule Service Modal -->
+    <div id="serviceModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div class="bg-background rounded-lg p-6 max-w-lg w-full mx-4">
+        <h2 class="text-2xl font-bold mb-4">Schedule Service</h2>
+        <form id="serviceForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Equipment</label>
+            <select name="equipmentId" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+              <!-- Equipment options will be populated dynamically -->
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Service Type</label>
+            <select name="serviceType" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+              <option value="maintenance">Regular Maintenance</option>
+              <option value="repair">Repair</option>
+              <option value="inspection">Inspection</option>
+              <option value="emergency">Emergency Service</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Description</label>
+            <textarea name="description" rows="3" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2" placeholder="Describe the service needed..."></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Preferred Date & Time</label>
+            <input type="text" name="datetime" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2" id="datetimePicker">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium mb-1">Location</label>
+            <select name="location" required class="w-full rounded-lg border border-border bg-transparent px-4 py-2">
+              <option value="onsite">On-site Service</option>
+              <option value="workshop">Service Center</option>
+            </select>
+          </div>
+          
+          <div class="flex justify-end space-x-4 mt-6">
+            <button type="button" onclick="hideServiceForm()" class="px-4 py-2 rounded-lg border border-border hover:bg-secondary">
+              Cancel
+            </button>
+            <button type="submit" class="px-6 py-2 rounded-lg bg-primary text-primary-foreground shadow hover:bg-opacity-90">
+              Schedule Service
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer remains the same -->
+
+  <script>
+    // Initialize Socket.io connection
+    const socket = io('http://localhost:3000');
+
+    // Initialize Flatpickr
+    flatpickr("#datetimePicker", {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      minDate: "today",
+      time_24hr: true
+    });
+
+    // Service item template
+    function createServiceItem(service) {
+      const statusColors = {
+        scheduled: 'bg-blue-500',
+        inProgress: 'bg-yellow-500',
+        completed: 'bg-green-500',
+        cancelled: 'bg-red-500'
+      };
+
+      return `
+        <div class="flex items-center justify-between p-4 bg-background rounded-lg">
+          <div class="flex items-center space-x-4">
+            <div class="flex h-2.5 w-2.5 rounded-full ${statusColors[service.status]}"></div>
+            <div>
+              <p class="font-medium">${service.equipmentName}</p>
+              <p class="text-sm text-muted-foreground">${service.serviceType} - ${service.datetime}</p>
+            </div>
+          </div>
+          <div class="flex space-x-2">
+            ${service.status === 'scheduled' ? `
+              <button onclick="rescheduleService(${service.id})" class="p-2 hover:bg-secondary rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </button>
+              <button onclick="cancelService(${service.id})" class="p-2 hover:bg-secondary rounded-lg text-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Technician availability template
+    function createAvailabilityItem(technician) {
+      return `
+        <div class="flex items-center justify-between p-4 bg-background rounded-lg">
+          <div>
+            <p class="font-medium">${technician.name}</p>
+            <p class="text-sm text-muted-foreground">Next available: ${technician.nextAvailable}</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="flex h-2.5 w-2.5 rounded-full ${technician.isAvailable ? 'bg-green-500' : 'bg-yellow-500'}"></div>
+            <span class="text-sm">${technician.isAvailable ? 'Available' : 'Busy'}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Fetch and display upcoming services
+    async function fetchUpcomingServices() {
+      try {
+        const response = await fetch('/api/services');
+        const data = await response.json();
+        
+        const list = document.getElementById('upcomingServices');
+        const upcomingServices = data.filter(service => service.status === 'scheduled');
+        list.innerHTML = upcomingServices.map(service => createServiceItem(service)).join('');
+        
+        // Update stats
+        document.getElementById('upcomingCount').textContent = upcomingServices.length;
+      } catch (error) {
+        console.error('Error fetching upcoming services:', error);
+      }
+    }
+
+    // Fetch and display service history
+    async function fetchServiceHistory() {
+      try {
+        const response = await fetch('/api/services');
+        const data = await response.json();
+        
+        const list = document.getElementById('serviceHistory');
+        const completedServices = data.filter(service => service.status === 'completed');
+        list.innerHTML = completedServices.map(service => createServiceItem(service)).join('');
+        
+        // Update stats
+        document.getElementById('completedServices').textContent = completedServices.length;
+        
+        // Calculate average rating
+        const totalRating = completedServices.reduce((sum, service) => sum + (service.rating || 0), 0);
+        const averageRating = completedServices.length ? (totalRating / completedServices.length).toFixed(1) : '0.0';
+        document.getElementById('averageRating').textContent = averageRating;
+      } catch (error) {
+        console.error('Error fetching service history:', error);
+      }
+    }
+
+    // Fetch and display technician availability
+    async function fetchTechnicianAvailability() {
+      try {
+        const response = await fetch('/api/services/availability');
+        const data = await response.json();
+        
+        const list = document.getElementById('technicianAvailability');
+        list.innerHTML = data.map(technician => createAvailabilityItem(technician)).join('');
+        
+        // Update response time stat
+        const avgResponseTime = data.reduce((sum, tech) => sum + tech.responseTime, 0) / data.length;
+        document.getElementById('responseTime').textContent = `${Math.round(avgResponseTime)}h`;
+      } catch (error) {
+        console.error('Error fetching technician availability:', error);
+      }
+    }
+
+    // Schedule new service
+    const serviceForm = document.getElementById('serviceForm');
+    serviceForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      try {
+        const formData = new FormData(serviceForm);
+        const response = await fetch('/api/services', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          hideServiceForm();
+          fetchUpcomingServices();
+        }
+      } catch (error) {
+        console.error('Error scheduling service:', error);
+      }
+    });
+
+    // Real-time updates
+    socket.on('service-update', (data) => {
+      fetchUpcomingServices();
+      fetchServiceHistory();
+    });
+
+    socket.on('technician-update', (data) => {
+      fetchTechnicianAvailability();
+    });
+
+    // Modal controls
+    function showServiceForm() {
+      document.getElementById('serviceModal').classList.remove('hidden');
+    }
+
+    function hideServiceForm() {
+      document.getElementById('serviceModal').classList.add('hidden');
+    }
+
+    // Service management functions
+    async function rescheduleService(id) {
+      // Implementation
+    }
+
+    async function cancelService(id) {
+      try {
+        const response = await fetch(`/api/services/${id}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          fetchUpcomingServices();
+        }
+      } catch (error) {
+        console.error('Error cancelling service:', error);
+      }
+    }
+
+    // Initialize page
+    fetchUpcomingServices();
+    fetchServiceHistory();
+    fetchTechnicianAvailability();
+
+    // Populate equipment select
+    async function populateEquipmentSelect() {
+      try {
+        const response = await fetch('/api/tractors');
+        const data = await response.json();
+        
+        const select = document.querySelector('select[name="equipmentId"]');
+        select.innerHTML = data.map(equipment => 
+          `<option value="${equipment.id}">${equipment.name}</option>`
+        ).join('');
+      } catch (error) {
+        console.error('Error fetching equipment:', error);
+      }
+    }
+
+    populateEquipmentSelect();
+  </script>
+<!-- Footer -->
+<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <!-- Company Info -->
+      <div>
+        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+          <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+          <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+          <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Support</h3>
+        <ul class="space-y-2">
+          <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+          <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+          <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+          <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+        </ul>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+        <form class="space-y-2">
+          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 border-t border-dark-300">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+          <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+          <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+          <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Newsletter form submission
+  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.querySelector('input[type="email"]').value;
+    
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        alert('Thank you for subscribing!');
+        e.target.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
+  });
+</script> 
+</body>
+</html> 

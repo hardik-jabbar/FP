@@ -1,0 +1,30 @@
+{
+  "name": "farmpower",
+  "version": "1.0.0",
+  "description": "Smart farming platform for equipment management and agricultural solutions",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "check-links": "node scripts/link-checker.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "multer": "^1.4.5-lts.1",
+    "@auth0/auth0-spa-js": "^2.1.2"
+  },
+  "devDependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "FarmPower Team",
+  "license": "MIT"
+} 

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart - FarmPower</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/cart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: '#4CAF50',
+            'primary-foreground': '#FFFFFF',
+            dark: '#1A1A1A',
+            'dark-200': '#2D2D2D',
+            secondary: {
+              DEFAULT: '#f3f4f6',
+              foreground: '#171717'
+            },
+            muted: {
+              DEFAULT: '#f3f4f6',
+              foreground: '#737373'
+            },
+            background: '#ffffff',
+            foreground: '#171717',
+            border: '#e5e7eb',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.4s ease-out',
+            'scale-in': 'scaleIn 0.3s ease-out',
+            'slide-in': 'slideIn 0.4s ease-out',
+            'slide-up': 'slideUp 0.4s ease-out',
+            'float': 'float 3s ease-in-out infinite'
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            scaleIn: {
+              '0%': { transform: 'scale(0.95)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' }
+            },
+            slideIn: {
+              '0%': { transform: 'translateX(-20px)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' }
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-5px)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom CSS */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #1A1A1A;
+      color: #FFFFFF;
+    }
+    
+    .glass {
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-hover {
+      transition: all 0.3s;
+    }
+    
+    .card-hover:hover {
+      transform: scale(1.02);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      background-color: rgba(243, 244, 246, 0.5);
+    }
+    
+    .nav-link {
+      position: relative;
+      padding: 4px 8px;
+      transition: all 0.3s;
+    }
+    
+    .nav-link:hover {
+      color: #171717;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      width: 0;
+      background-color: #171717;
+      transition: all 0.3s;
+    }
+    
+    .nav-link:hover::after {
+      width: 100%;
+    }
+    
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      background-color: #f3f4f6;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #171717;
+      transition: colors 0.2s;
+    }
+    
+    .btn-icon {
+      display: flex;
+      height: 40px;
+      width: 40px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #171717;
+      transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Animation classes */
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+    
+    .animate-scale-in {
+      animation: scaleIn 0.3s ease-out;
+    }
+    
+    .animate-slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+    
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+    
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scaleIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+      0% { transform: translateX(-20px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9CA3AF;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div id="header"></div>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
+      
+      <div id="cartItems" class="space-y-4">
+        <!-- Cart items will be loaded here -->
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p class="mt-4">Loading cart items...</p>
+      </div>
+    </div>
+    
+      <div id="emptyCart" class="hidden text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+        <h2 class="text-2xl font-semibold mb-4">Your cart is empty</h2>
+        <p class="text-gray-400 mb-8">Add some tractors to your cart to get started!</p>
+        <a href="shop.html" class="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">
+          Browse Tractors
+        </a>
+    </div>
+    
+      <div id="cartSummary" class="hidden mt-8 bg-dark-200 rounded-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-lg">Subtotal</span>
+          <span id="subtotal" class="text-xl font-bold">$0.00</span>
+        </div>
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-lg">Shipping</span>
+          <span class="text-xl font-bold">$0.00</span>
+        </div>
+        <div class="border-t border-gray-700 my-4"></div>
+        <div class="flex justify-between items-center mb-6">
+          <span class="text-lg">Total</span>
+          <span id="total" class="text-2xl font-bold text-primary">$0.00</span>
+        </div>
+        <button onclick="checkout()" class="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">
+          Proceed to Checkout
+          </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <div id="footer"></div>
+
+<script>
+    // Load header and footer
+    fetch('components/header.html')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html;
+      });
+
+    fetch('components/footer.html')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('footer').innerHTML = html;
+      });
+
+    // Load cart items
+    function loadCartItems() {
+      const cartItems = document.getElementById('cartItems');
+      const emptyCart = document.getElementById('emptyCart');
+      const cartSummary = document.getElementById('cartSummary');
+      
+      if (cart.items.length === 0) {
+        cartItems.classList.add('hidden');
+        emptyCart.classList.remove('hidden');
+        cartSummary.classList.add('hidden');
+        return;
+      }
+
+      cartItems.classList.remove('hidden');
+      emptyCart.classList.add('hidden');
+      cartSummary.classList.remove('hidden');
+
+      cartItems.innerHTML = cart.items.map(item => `
+        <div class="bg-dark-200 rounded-lg p-4 flex items-center">
+          <img src="${item.image_url}" alt="${item.name}" class="w-24 h-24 object-cover rounded-lg">
+          <div class="ml-4 flex-grow">
+            <h3 class="text-lg font-semibold">${item.name}</h3>
+            <p class="text-gray-400">$${item.price.toLocaleString()}</p>
+          </div>
+          <div class="flex items-center">
+            <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})" class="text-gray-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+              </svg>
+            </button>
+            <span class="mx-4">${item.quantity}</span>
+            <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})" class="text-gray-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+            </button>
+          </div>
+          <button onclick="removeItem(${item.id})" class="ml-4 text-red-500 hover:text-red-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
+        </div>
+      `).join('');
+
+      // Update totals
+      const subtotal = cart.getTotal();
+      document.getElementById('subtotal').textContent = `$${subtotal.toLocaleString()}`;
+      document.getElementById('total').textContent = `$${subtotal.toLocaleString()}`;
+    }
+
+    // Update item quantity
+    function updateQuantity(tractorId, quantity) {
+      cart.updateQuantity(tractorId, quantity);
+      loadCartItems();
+    }
+
+    // Remove item from cart
+    function removeItem(tractorId) {
+      cart.removeItem(tractorId);
+      loadCartItems();
+    }
+
+    // Checkout function
+    function checkout() {
+      // TODO: Implement checkout functionality
+      alert('Checkout functionality coming soon!');
+    }
+
+    // Load cart items when page loads
+    document.addEventListener('DOMContentLoaded', loadCartItems);
+  </script>
+</body>
+</html>

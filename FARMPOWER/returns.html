@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Returns - FarmPower</title>
+  <meta name="description" content="Information about FarmPower's return and refund policies">
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#ffffff',
+            foreground: '#000000',
+            primary: {
+              DEFAULT: '#2563eb',
+              foreground: '#ffffff',
+            },
+            secondary: {
+              DEFAULT: '#f3f4f6',
+            },
+            border: '#e5e7eb',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+
+  <style type="text/css">
+    /* Base styles */
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Utility classes */
+    .btn-icon {
+      @apply p-2 hover:bg-secondary rounded-lg transition-colors;
+    }
+
+    .nav-link {
+      @apply text-foreground/80 hover:text-foreground transition-colors;
+    }
+
+    /* Animations */
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 0.3s ease-out;
+    }
+
+    .animate-slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scaleIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      0% { transform: translateX(-20px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9CA3AF;
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground">
+<!-- Navigation Header -->
+<header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+  <div class="container mx-auto px-4 md:px-6">
+    <nav class="flex items-center justify-between py-4">
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center space-x-2">
+        <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
+        <span class="text-xl font-bold">FarmPower</span>
+      </a>
+
+      <!-- Main Navigation -->
+      <ul class="hidden md:flex items-center space-x-8">
+        <li>
+          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Equipment Market
+          </a>
+        </li>
+        <li>
+          <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Parts Market
+          </a>
+        </li>
+        <li>
+          <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Service
+          </a>
+        </li>
+        <li>
+          <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            GPS Tracking
+          </a>
+        </li>
+        <li>
+          <a href="crop-calculator.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Crop Calculator
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="notifications.html" class="relative p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="notificationCount" class="absolute top-0 right-0 h-5 w-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">0</span>
+        </a>
+
+        <!-- User Dropdown (when logged in) -->
+        <div id="userMenu" class="relative hidden">
+          <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-secondary rounded-lg p-2">
+            <img id="userAvatar" src="assets/images/avatar-placeholder.png" alt="User Avatar" class="h-8 w-8 rounded-full">
+            <span id="userName" class="text-sm font-medium">User Name</span>
+          </button>
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+            <a href="profile.html" class="block px-4 py-2 text-sm hover:bg-secondary">Profile</a>
+            <a href="my-equipment.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Equipment</a>
+            <a href="my-services.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Services</a>
+            <a href="settings.html" class="block px-4 py-2 text-sm hover:bg-secondary">Settings</a>
+            <hr class="my-1 border-border">
+            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-secondary">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth Buttons (when logged out) -->
+        <div id="authButtons" class="flex items-center space-x-4">
+          <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
+          <a href="register.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            Register
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="md:hidden fixed inset-y-0 right-0 w-full max-w-sm bg-background border-l border-border transform translate-x-full transition-transform duration-200 ease-in-out">
+    <div class="flex flex-col h-full">
+      <div class="flex items-center justify-between p-4 border-b border-border">
+        <span class="text-lg font-bold">Menu</span>
+        <button onclick="toggleMobileMenu()" class="p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-4">
+        <ul class="space-y-4">
+          <li>
+            <a href="shop.html" class="block text-lg hover:text-primary">Equipment Market</a>
+          </li>
+          <li>
+            <a href="parts-marketplace.html" class="block text-lg hover:text-primary">Parts Market</a>
+          </li>
+          <li>
+            <a href="service-scheduling.html" class="block text-lg hover:text-primary">Service</a>
+          </li>
+          <li>
+            <a href="gps-tracking.html" class="block text-lg hover:text-primary">GPS Tracking</a>
+          </li>
+          <li>
+            <a href="crop-calculator.html" class="block text-lg hover:text-primary">Crop Calculator</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Toggle mobile menu
+  function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenu.classList.toggle('translate-x-full');
+  }
+
+  // Toggle user dropdown
+  function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    const userMenu = document.getElementById('userMenu');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (!userMenu.contains(e.target)) {
+      userDropdown.classList.add('hidden');
+    }
+  });
+
+  // Handle authentication state
+  function updateAuthState(isLoggedIn, userData = null) {
+    const userMenu = document.getElementById('userMenu');
+    const authButtons = document.getElementById('authButtons');
+    
+    if (isLoggedIn && userData) {
+      userMenu.classList.remove('hidden');
+      authButtons.classList.add('hidden');
+      
+      // Update user info
+      document.getElementById('userName').textContent = userData.name;
+      if (userData.avatar) {
+        document.getElementById('userAvatar').src = userData.avatar;
+      }
+    } else {
+      userMenu.classList.add('hidden');
+      authButtons.classList.remove('hidden');
+    }
+  }
+
+  // Check authentication state on page load
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/user/me');
+      if (response.ok) {
+        const userData = await response.json();
+        updateAuthState(true, userData);
+      } else {
+        updateAuthState(false);
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      updateAuthState(false);
+    }
+  }
+
+  // Logout function
+  async function logout() {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      updateAuthState(false);
+      window.location.href = "login.html";
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  }
+
+  // Initialize
+  checkAuth();
+</script> 
+  <!-- Include Header -->
+  <div id="header-placeholder"></div>
+
+  <!-- Main Content -->
+  <main>
+    
+    <!-- Returns Header -->
+    <section class="bg-secondary/50 py-10 md:py-16">
+      <div class="container mx-auto px-4 md:px-6">
+        <div class="flex flex-col items-center text-center">
+          <h1 class="text-3xl md:text-5xl font-medium tracking-tight animate-fade-in">Returns & Exchanges</h1>
+          <p class="mt-4 max-w-2xl text-muted-foreground md:text-lg animate-fade-in">
+            Our hassle-free policy ensures your complete satisfaction with every purchase
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Returns Content -->
+    <section class="py-16 md:py-24 bg-background">
+      <div class="container mx-auto px-4 md:px-6 max-w-4xl">
+        <div class="space-y-12">
+          <!-- Return Policy Overview -->
+          <div>
+            <h2 class="text-2xl font-medium mb-6 pb-2 border-b border-border">Return Policy Overview</h2>
+            <div class="space-y-6">
+              <p class="text-muted-foreground">At Essentials, we stand behind the quality of our products and want you to be completely satisfied with your purchase. If you're not entirely happy with your order, we're here to help.</p>
+              
+              <div class="bg-secondary/30 rounded-xl p-6">
+                <h3 class="text-xl font-medium mb-4">Quick Summary</h3>
+                <ul class="space-y-3">
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>30-day return period</strong> from the date of delivery</span>
+                  </li>
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>Items must be unused</strong> with original tags and packaging</span>
+                  </li>
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>Free return shipping</strong> for customers in the United States</span>
+                  </li>
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 flex-shrink-0 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>Refunds processed</strong> within 5-7 business days of receiving your return</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Return Process -->
+          <div>
+            <h2 class="text-2xl font-medium mb-6 pb-2 border-b border-border">Return Process</h2>
+            <div class="space-y-8">
+              <p class="text-muted-foreground">Follow these simple steps to return an item:</p>
+              
+              <div class="space-y-6">
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0 p-1">
+                    <div class="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+                      <span class="font-medium">1</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Initiate Your Return</h4>
+                    <p class="text-muted-foreground">Log into your account and go to "Order History." Select the order and items you wish to return and follow the prompts. If you checked out as a guest, use our <a href="#" class="text-primary hover:underline">Guest Return Portal</a> with your order number and email address.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0 p-1">
+                    <div class="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+                      <span class="font-medium">2</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Print Your Return Label</h4>
+                    <p class="text-muted-foreground">Once your return is approved, you'll receive a prepaid return shipping label via email. Print this label and attach it to your package. If you don't have access to a printer, contact our customer service team for alternative options.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0 p-1">
+                    <div class="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+                      <span class="font-medium">3</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Pack Your Items</h4>
+                    <p class="text-muted-foreground">Carefully pack the items you're returning in their original packaging or a secure alternative. Include all original tags, accessories, and any paperwork that came with the items. Please don't use markings or labels on the original product packaging.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0 p-1">
+                    <div class="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+                      <span class="font-medium">4</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Ship Your Return</h4>
+                    <p class="text-muted-foreground">Drop off your package at any authorized carrier location (USPS, UPS, or FedEx, depending on your return label). We recommend getting a tracking receipt for your records. Returns typically take 5-10 business days to reach our warehouse.</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0 p-1">
+                    <div class="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+                      <span class="font-medium">5</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Refund Processing</h4>
+                    <p class="text-muted-foreground">Once we receive and inspect your return, we'll process your refund within 5-7 business days. You'll receive an email confirmation when your refund has been processed. The refund will be issued to your original payment method.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Exchanges -->
+          <div>
+            <h2 class="text-2xl font-medium mb-6 pb-2 border-b border-border">Exchanges</h2>
+            <div class="space-y-6">
+              <p class="text-muted-foreground">If you'd like to exchange an item for a different size, color, or product, we recommend placing a new order for the desired item and returning the original purchase using our standard return process. This ensures you receive your preferred item as quickly as possible.</p>
+              
+              <p class="text-muted-foreground">For special circumstances or assistance with exchanges, please contact our customer service team. We're happy to help coordinate an exchange for you.</p>
+            </div>
+          </div>
+          
+          <!-- Return Eligibility -->
+          <div>
+            <h2 class="text-2xl font-medium mb-6 pb-2 border-b border-border">Return Eligibility</h2>
+            <div class="space-y-8">
+              <div>
+                <h3 class="text-xl font-medium mb-3">Eligible for Return</h3>
+                <p class="text-muted-foreground mb-4">Items that meet the following criteria are eligible for return:</p>
+                
+                <ul class="list-disc list-inside text-muted-foreground space-y-2 pl-4">
+                  <li>Returned within 30 days of delivery</li>
+                  <li>Unused, unworn, and unwashed</li>
+                  <li>In original condition with all tags attached</li>
+                  <li>In original or equivalent packaging</li>
+                  <li>Accompanied by the original receipt or proof of purchase</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 class="text-xl font-medium mb-3">Not Eligible for Return</h3>
+                <p class="text-muted-foreground mb-4">The following items cannot be returned:</p>
+                
+                <ul class="list-disc list-inside text-muted-foreground space-y-2 pl-4">
+                  <li>Items marked as final sale or clearance</li>
+                  <li>Personalized or custom-made items</li>
+                  <li>Gift cards</li>
+                  <li>Items that have been used, washed, or worn (except for defective items)</li>
+                  <li>Items without the original tags and packaging</li>
+                  <li>Items returned after 30 days from delivery</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Defective Items & Exceptions -->
+          <div>
+            <h2 class="text-2xl font-medium mb-6 pb-2 border-b border-border">Defective Items & Exceptions</h2>
+            <div class="space-y-6">
+              <p class="text-muted-foreground">If you receive a defective or damaged item, please contact our customer service team within 7 days of receiving your order. Provide photos of the defect or damage to help us assess the issue. We'll work with you to resolve the problem promptly, either by replacing the item or issuing a refund.</p>
+              
+              <p class="text-muted-foreground">In the rare case that you receive an incorrect item, please contact us immediately. We'll arrange for the return of the incorrect item and ensure you receive the item you originally ordered.</p>
+              
+              <div class="bg-muted rounded-xl p-6 mt-4">
+                <h4 class="font-medium mb-2">Special Circumstances</h4>
+                <p class="text-muted-foreground">We understand that special circumstances may arise. If you have a unique situation regarding a return or exchange, please contact our customer service team. We're committed to customer satisfaction and will work with you to find a solution.</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- International Returns -->
+          <div>
+            <h2 class="text-2xl font-medium mb-6 pb-2 border-b border-border">International Returns</h2>
+            <div class="space-y-6">
+              <p class="text-muted-foreground">We accept returns from international customers within 30 days of delivery. However, return shipping costs for international orders are the responsibility of the customer, and we are unable to provide prepaid return labels for international shipments.</p>
+              
+              <p class="text-muted-foreground">To initiate an international return, please contact our customer service team for instructions. We recommend using a tracked shipping method for your return. Please note that international returns may take longer to process, and refund times may vary depending on your financial institution.</p>
+              
+              <p class="text-muted-foreground">Any customs fees, taxes, or duties incurred during the return shipping process are the responsibility of the customer and are non-refundable.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Returns FAQ Section -->
+        <div class="mt-20 border-t border-border pt-12">
+          <h2 class="text-2xl font-medium mb-8 text-center">Frequently Asked Questions</h2>
+          
+          <div class="space-y-6">
+            <div class="border border-border rounded-lg p-6 animate-slide-up">
+              <h3 class="text-lg font-medium mb-2">How long will it take to receive my refund?</h3>
+              <p class="text-muted-foreground">Refunds are processed within 5-7 business days after we receive your return. Once processed, it may take an additional 3-10 business days for the refund to appear in your account, depending on your payment method and financial institution.</p>
+            </div>
+            
+            <div class="border border-border rounded-lg p-6 animate-slide-up" style="animation-delay: 0.1s;">
+              <h3 class="text-lg font-medium mb-2">Can I return a gift?</h3>
+              <p class="text-muted-foreground">Yes, gifts can be returned within 30 days of the delivery date. You'll need the order number, which can be found on the gift receipt. Returns of gifts will be issued as store credit to the gift recipient, not to the original purchaser.</p>
+            </div>
+            
+            <div class="border border-border rounded-lg p-6 animate-slide-up" style="animation-delay: 0.2s;">
+              <h3 class="text-lg font-medium mb-2">What if I don't have the original packaging?</h3>
+              <p class="text-muted-foreground">We strongly recommend returning items in their original packaging to ensure they're not damaged during transit. If you no longer have the original packaging, please use a sturdy box or mailer and ensure the item is well-protected. Items damaged during return shipping due to inadequate packaging may not be eligible for a full refund.</p>
+            </div>
+          </div>
+          
+          <div class="mt-12 text-center">
+            <p class="mb-4 text-muted-foreground">Have more questions about returns or exchanges?</p>
+            <a href="contact.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-primary-foreground shadow transition-colors hover:bg-opacity-90">
+              Contact Us
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  
+  </main>
+
+  <!-- Include Footer -->
+  <div id="footer-placeholder"></div>
+
+  <script>
+    // Load header and footer
+    fetch('/FARMPOWER/components/header.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('header-placeholder').innerHTML = data;
+      });
+
+    fetch('/FARMPOWER/components/footer.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('footer-placeholder').innerHTML = data;
+      });
+  </script>
+<!-- Footer -->
+<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <!-- Company Info -->
+      <div>
+        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+          <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+          <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+          <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Support</h3>
+        <ul class="space-y-2">
+          <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+          <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+          <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+          <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+        </ul>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+        <form class="space-y-2">
+          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 border-t border-dark-300">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+          <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+          <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+          <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Newsletter form submission
+  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.querySelector('input[type="email"]').value;
+    
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        alert('Thank you for subscribing!');
+        e.target.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
+  });
+</script> 
+</body>
+</html>

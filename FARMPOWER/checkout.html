@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - TractorHub</title>
+  <meta name="description" content="Complete your order at Essentials - Premium everyday essentials designed with simplicity and functionality in mind.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              DEFAULT: '#171717',
+              foreground: '#f8f8f8'
+            },
+            secondary: {
+              DEFAULT: '#f3f4f6',
+              foreground: '#171717'
+            },
+            muted: {
+              DEFAULT: '#f3f4f6',
+              foreground: '#737373'
+            },
+            background: '#ffffff',
+            foreground: '#171717',
+            border: '#e5e7eb',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.4s ease-out',
+            'scale-in': 'scaleIn 0.3s ease-out',
+            'slide-in': 'slideIn 0.4s ease-out',
+            'slide-up': 'slideUp 0.4s ease-out',
+            'float': 'float 3s ease-in-out infinite'
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            scaleIn: {
+              '0%': { transform: 'scale(0.95)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' }
+            },
+            slideIn: {
+              '0%': { transform: 'translateX(-20px)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' }
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-5px)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom CSS */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .glass {
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-hover {
+      transition: all 0.3s;
+    }
+    
+    .card-hover:hover {
+      transform: scale(1.02);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      background-color: rgba(243, 244, 246, 0.5);
+    }
+    
+    .nav-link {
+      position: relative;
+      padding: 4px 8px;
+      transition: all 0.3s;
+    }
+    
+    .nav-link:hover {
+      color: #171717;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      width: 0;
+      background-color: #171717;
+      transition: all 0.3s;
+    }
+    
+    .nav-link:hover::after {
+      width: 100%;
+    }
+    
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      background-color: #f3f4f6;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #171717;
+      transition: colors 0.2s;
+    }
+    
+    .btn-icon {
+      display: flex;
+      height: 40px;
+      width: 40px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #171717;
+      transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Animation classes */
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+    
+    .animate-scale-in {
+      animation: scaleIn 0.3s ease-out;
+    }
+    
+    .animate-slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+    
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+    
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scaleIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+      0% { transform: translateX(-20px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9CA3AF;
+    }
+    
+    /* Custom form styling */
+    .form-control {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: #171717;
+      background-color: #fff;
+      background-clip: padding-box;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      transition: border-color 0.15s ease-in-out;
+    }
+    
+    .form-control:focus {
+      border-color: #171717;
+      outline: 0;
+      box-shadow: 0 0 0 2px rgba(23, 23, 23, 0.1);
+    }
+    
+    .form-control::placeholder {
+      color: #9ca3af;
+    }
+    
+    .form-select {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 2.5rem 0.75rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: #171717;
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1em;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      appearance: none;
+    }
+    
+    .form-select:focus {
+      border-color: #171717;
+      outline: 0;
+      box-shadow: 0 0 0 2px rgba(23, 23, 23, 0.1);
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #171717;
+    }
+    
+    .form-check {
+      display: block;
+      min-height: 1.5rem;
+      padding-left: 1.5rem;
+      margin-bottom: 0.125rem;
+    }
+    
+    .form-check-input {
+      float: left;
+      margin-left: -1.5rem;
+      width: 1rem;
+      height: 1rem;
+      margin-top: 0.25rem;
+      vertical-align: top;
+      background-color: #fff;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      border: 1px solid #e5e7eb;
+      appearance: none;
+    }
+    
+    .form-check-label {
+      display: inline-block;
+      font-size: 0.875rem;
+      color: #171717;
+    }
+    
+    .form-check-input[type="checkbox"] {
+      border-radius: 0.25rem;
+    }
+    
+    .form-check-input:checked {
+      background-color: #171717;
+      border-color: #171717;
+    }
+    
+    .form-check-input:checked[type="checkbox"] {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 13 11' width='13' height='11' fill='none'%3e%3cpath d='M11.0426 1.02893C11.3258 0.695792 11.8254 0.655283 12.1585 0.938451C12.4917 1.22162 12.5322 1.72124 12.249 2.05438L5.51985 9.97104C5.23224 10.3094 4.72261 10.3451 4.3907 10.05L0.828197 6.88335C0.50141 6.59288 0.471975 6.09249 0.762452 5.7657C1.05293 5.43891 1.55332 5.40948 1.88011 5.69995L4.83765 8.32889L11.0426 1.02893Z' fill='%23fff'/%3e%3c/svg%3e");
+    }
+    
+    .form-check-input:focus {
+      border-color: #171717;
+      outline: 0;
+      box-shadow: 0 0 0 2px rgba(23, 23, 23, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground">
+<!-- Navigation Header -->
+<header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+  <div class="container mx-auto px-4 md:px-6">
+    <nav class="flex items-center justify-between py-4">
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center space-x-2">
+        <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
+        <span class="text-xl font-bold">FarmPower</span>
+      </a>
+
+      <!-- Main Navigation -->
+      <ul class="hidden md:flex items-center space-x-8">
+        <li>
+          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Equipment Market
+          </a>
+        </li>
+        <li>
+          <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Parts Market
+          </a>
+        </li>
+        <li>
+          <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Service
+          </a>
+        </li>
+        <li>
+          <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            GPS Tracking
+          </a>
+        </li>
+        <li>
+          <a href="crop-calculator.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Crop Calculator
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="notifications.html" class="relative p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="notificationCount" class="absolute top-0 right-0 h-5 w-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">0</span>
+        </a>
+
+        <!-- User Dropdown (when logged in) -->
+        <div id="userMenu" class="relative hidden">
+          <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-secondary rounded-lg p-2">
+            <img id="userAvatar" src="assets/images/avatar-placeholder.png" alt="User Avatar" class="h-8 w-8 rounded-full">
+            <span id="userName" class="text-sm font-medium">User Name</span>
+          </button>
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+            <a href="profile.html" class="block px-4 py-2 text-sm hover:bg-secondary">Profile</a>
+            <a href="my-equipment.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Equipment</a>
+            <a href="my-services.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Services</a>
+            <a href="settings.html" class="block px-4 py-2 text-sm hover:bg-secondary">Settings</a>
+            <hr class="my-1 border-border">
+            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-secondary">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth Buttons (when logged out) -->
+        <div id="authButtons" class="flex items-center space-x-4">
+          <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
+          <a href="register.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            Register
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="md:hidden fixed inset-y-0 right-0 w-full max-w-sm bg-background border-l border-border transform translate-x-full transition-transform duration-200 ease-in-out">
+    <div class="flex flex-col h-full">
+      <div class="flex items-center justify-between p-4 border-b border-border">
+        <span class="text-lg font-bold">Menu</span>
+        <button onclick="toggleMobileMenu()" class="p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-4">
+        <ul class="space-y-4">
+          <li>
+            <a href="shop.html" class="block text-lg hover:text-primary">Equipment Market</a>
+          </li>
+          <li>
+            <a href="parts-marketplace.html" class="block text-lg hover:text-primary">Parts Market</a>
+          </li>
+          <li>
+            <a href="service-scheduling.html" class="block text-lg hover:text-primary">Service</a>
+          </li>
+          <li>
+            <a href="gps-tracking.html" class="block text-lg hover:text-primary">GPS Tracking</a>
+          </li>
+          <li>
+            <a href="crop-calculator.html" class="block text-lg hover:text-primary">Crop Calculator</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Toggle mobile menu
+  function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenu.classList.toggle('translate-x-full');
+  }
+
+  // Toggle user dropdown
+  function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    const userMenu = document.getElementById('userMenu');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (!userMenu.contains(e.target)) {
+      userDropdown.classList.add('hidden');
+    }
+  });
+
+  // Handle authentication state
+  function updateAuthState(isLoggedIn, userData = null) {
+    const userMenu = document.getElementById('userMenu');
+    const authButtons = document.getElementById('authButtons');
+    
+    if (isLoggedIn && userData) {
+      userMenu.classList.remove('hidden');
+      authButtons.classList.add('hidden');
+      
+      // Update user info
+      document.getElementById('userName').textContent = userData.name;
+      if (userData.avatar) {
+        document.getElementById('userAvatar').src = userData.avatar;
+      }
+    } else {
+      userMenu.classList.add('hidden');
+      authButtons.classList.remove('hidden');
+    }
+  }
+
+  // Check authentication state on page load
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/user/me');
+      if (response.ok) {
+        const userData = await response.json();
+        updateAuthState(true, userData);
+      } else {
+        updateAuthState(false);
+      }
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      updateAuthState(false);
+    }
+  }
+
+  // Logout function
+  async function logout() {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      updateAuthState(false);
+      window.location.href = "login.html";
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  }
+
+  // Initialize
+  checkAuth();
+</script> 
+  <!-- Navigation -->
+  <header id="navigation" class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div class="container mx-auto px-4 md:px-6">
+      <div class="flex h-16 items-center justify-between">
+        <a href="index.html" class="text-2xl font-medium tracking-tight transition-opacity hover:opacity-80">
+          <span class="sr-only">Navigate home</span>
+          TractorHub.
+        </a>
+        
+        <nav class="hidden md:flex items-center space-x-8">
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="collections.html" class="nav-link">Parts & Service</a>
+          <a href="about.html" class="nav-link">About</a>
+          <a href="contact.html" class="nav-link">Contact</a>
+        </nav>
+        
+        <div class="flex items-center space-x-4">
+          <button aria-label="Search" class="btn-icon hidden md:flex">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+          </button>
+          
+          <a href="cart.html" aria-label="Shopping cart" class="btn-icon relative">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="21" r="1"></circle>
+              <circle cx="19" cy="21" r="1"></circle>
+              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+            </svg>
+            <span class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+              3
+            </span>
+          </a>
+          
+          <button id="menuToggle" aria-label="Toggle menu" class="btn-icon md:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" x2="20" y1="12" y2="12"></line>
+              <line x1="4" x2="20" y1="6" y2="6"></line>
+              <line x1="4" x2="20" y1="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="fixed inset-0 bg-background pt-24 px-4 md:hidden transform transition-transform duration-300 ease-in-out translate-x-full">
+      <button id="closeMenu" class="absolute top-6 right-6 btn-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18"></path>
+          <path d="m6 6 12 12"></path>
+        </svg>
+      </button>
+      <nav class="flex flex-col space-y-6 text-lg">
+        <a href="shop.html" class="nav-link w-fit">Shop</a>
+        <a href="collections.html" class="nav-link w-fit">Parts & Service</a>
+        <a href="about.html" class="nav-link w-fit">About</a>
+        <a href="contact.html" class="nav-link w-fit">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 md:px-6 py-12">
+    <!-- Checkout Page Heading -->
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-medium tracking-tight mb-2">Checkout</h1>
+      <p class="text-muted-foreground">Complete your purchase</p>
+    </div>
+    
+    <div class="grid gap-10 lg:grid-cols-12">
+      <!-- Checkout Forms (8 columns on desktop) -->
+      <div class="lg:col-span-8 space-y-8 animate-fade-in">
+        <!-- Checkout Progress -->
+        <div class="w-full border-b border-border pb-6">
+          <div class="grid grid-cols-3 gap-2">
+            <div class="text-center">
+              <div class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-medium mb-2">1</div>
+              <div class="text-sm font-medium">Information</div>
+            </div>
+            <div class="text-center">
+              <div class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-secondary text-secondary-foreground font-medium mb-2">2</div>
+              <div class="text-sm text-muted-foreground">Shipping</div>
+            </div>
+            <div class="text-center">
+              <div class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-secondary text-secondary-foreground font-medium mb-2">3</div>
+              <div class="text-sm text-muted-foreground">Payment</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <section>
+          <h2 class="text-xl font-medium mb-4">Contact Information</h2>
+          <div class="space-y-4">
+            <div>
+              <label for="email" class="form-label">Email address</label>
+              <input type="email" id="email" class="form-control" placeholder="email@example.com" required>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="subscribe" class="form-check-input">
+              <label for="subscribe" class="form-check-label">Keep me updated with news and exclusive offers</label>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Shipping Address -->
+        <section>
+          <h2 class="text-xl font-medium mb-4">Shipping Address</h2>
+          <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label for="firstName" class="form-label">First name</label>
+                <input type="text" id="firstName" class="form-control" required>
+              </div>
+              <div>
+                <label for="lastName" class="form-label">Last name</label>
+                <input type="text" id="lastName" class="form-control" required>
+              </div>
+            </div>
+            
+            <div>
+              <label for="address" class="form-label">Address</label>
+              <input type="text" id="address" class="form-control" required>
+            </div>
+            
+            <div>
+              <label for="apartment" class="form-label">Apartment, suite, etc. (optional)</label>
+              <input type="text" id="apartment" class="form-control">
+            </div>
+            
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label for="city" class="form-label">City</label>
+                <input type="text" id="city" class="form-control" required>
+              </div>
+              <div>
+                <label for="country" class="form-label">Country</label>
+                <select id="country" class="form-select" required>
+                  <option value="">Select country</option>
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                  <option value="UK">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                </select>
+              </div>
+              <div>
+                <label for="postal" class="form-label">Postal code</label>
+                <input type="text" id="postal" class="form-control" required>
+              </div>
+            </div>
+            
+            <div>
+              <label for="phone" class="form-label">Phone (for delivery questions)</label>
+              <input type="tel" id="phone" class="form-control" required>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="saveAddress" class="form-check-input">
+              <label for="saveAddress" class="form-check-label">Save this information for next time</label>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Shipping Method -->
+        <section>
+          <h2 class="text-xl font-medium mb-4">Shipping Method</h2>
+          <div class="space-y-3">
+            <div class="relative border border-border rounded-lg p-4 flex items-center">
+              <input type="radio" name="shippingMethod" id="standard" class="form-check-input mr-3" checked>
+              <label for="standard" class="w-full cursor-pointer">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-medium">Standard Shipping</div>
+                    <div class="text-sm text-muted-foreground">4-6 business days</div>
+                  </div>
+                  <div class="font-medium">$5.00</div>
+                </div>
+              </label>
+            </div>
+            
+            <div class="relative border border-border rounded-lg p-4 flex items-center">
+              <input type="radio" name="shippingMethod" id="express" class="form-check-input mr-3">
+              <label for="express" class="w-full cursor-pointer">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-medium">Express Shipping</div>
+                    <div class="text-sm text-muted-foreground">2-3 business days</div>
+                  </div>
+                  <div class="font-medium">$15.00</div>
+                </div>
+              </label>
+            </div>
+            
+            <div class="relative border border-border rounded-lg p-4 flex items-center">
+              <input type="radio" name="shippingMethod" id="overnight" class="form-check-input mr-3">
+              <label for="overnight" class="w-full cursor-pointer">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-medium">Overnight Shipping</div>
+                    <div class="text-sm text-muted-foreground">Next business day</div>
+                  </div>
+                  <div class="font-medium">$25.00</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Payment Method - Stripe Integration Placeholder -->
+        <section>
+          <h2 class="text-xl font-medium mb-4">Payment Method</h2>
+          <div class="border border-border rounded-lg p-6 bg-secondary/10">
+            <div class="flex items-center mb-4">
+              <div class="w-full">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="font-medium">Credit Card</div>
+                  <div class="flex gap-2">
+                    <img src="https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-dashboard-pro/assets/img/logos/mastercard.png" alt="mastercard" class="h-8">
+                    <img src="https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-dashboard-pro/assets/img/logos/visa.png" alt="visa" class="h-8">
+                    <img src="https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-dashboard-pro/assets/img/logos/amex.png" alt<!-- Footer -->
+<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <!-- Company Info -->
+      <div>
+        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+          <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+          <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+          <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Support</h3>
+        <ul class="space-y-2">
+          <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+          <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+          <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+          <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+        </ul>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+        <form class="space-y-2">
+          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 border-t border-dark-300">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+          <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+          <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+          <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Newsletter form submission
+  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.querySelector('input[type="email"]').value;
+    
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        alert('Thank you for subscribing!');
+        e.target.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
+  });
+</script> y text-primary-foreground text-[10px] flex items-center justify-center">2</span>
+              </div>
+              
+              <div class="flex-1">
+                <h3 class="text-sm font-medium line-clamp-1">JD Toy Crane</h3>
+                <p class="text-xs text-muted-foreground">Color: Natural</p>
+                <p class="text-sm mt-1">Rs 5800 × 2</p>
+              </div>
+            </div>
+            
+            <!-- Item 3 -->
+            <div class="flex gap-3">
+              <div class="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0 border border-border">
+                <img 
+                  src="https://images.unsplash.com/flagged/photo-1556255609-fa59ae174716?q=80&w=2942&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                  alt="Linen Throw Pillow" 
+                  class="w-full h-full object-cover"
+                >
+                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">1</span>
+              </div>
+              
+              <div class="flex-1">
+                <h3 class="text-sm font-medium line-clamp-1">John Deere Garden Tractor</h3>
+                <p class="text-xs text-muted-foreground">Color: Natural</p>
+                <p class="text-sm mt-1">Rs 3.50 Lacs</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Discount Code -->
+          <div class="mb-4 pt-4 border-t border-border">
+            <div class="relative">
+              <input 
+                type="text" 
+                id="discount-code" 
+                placeholder="Discount Code" 
+                class="w-full rounded-lg border border-border bg-transparent px-4 py-2 text-sm"
+              >
+              <button class="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs font-medium hover:bg-secondary">
+                Apply
+              </button>
+            </div>
+          </div>
+          
+          <!-- Order Totals -->
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span>Subtotal</span>
+              <span class="font-medium">Rs 5.10 Lacs</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span>Shipping</span>
+              <span class="font-medium">Rs 50.00</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span>Tax</span>
+              <span class="font-medium">Rs 120.10</span>
+            </div>
+            
+            <div class="border-t border-border my-4 pt-4 flex justify-between text-base">
+              <span class="font-medium">Total</span>
+              <span class="font-medium">Rs 5.11 Lacs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-secondary/30 py-12 md:py-16 mt-16">
+    <div class="container mx-auto px-4 md:px-6">
+      <div class="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
+        <!-- Company Info -->
+        <div>
+          <h3 class="text-lg font-medium mb-4">Customer Care</h3>
+          <p class="text-sm text-muted-foreground mb-4 max-w-xs">
+            Our dedicated team is available to assist you Monday through Friday, 9am to 5pm EST.
+          </p>
+          <a href="mailto:support@essentials.com" class="inline-flex items-center text-sm hover:text-primary">
+            support@TractorHub.com
+          </a>
+        </div>
+        
+        <!-- Company -->
+        <div>
+          <h3 class="text-lg font-medium mb-4">Company</h3>
+          <ul class="space-y-2">
+            <li><a href="about.html" class="text-muted-foreground hover:text-foreground transition-colors">About Us</a></li>
+            <li><a href="contact.html" class="text-muted-foreground hover:text-foreground transition-colors">Contact Us</a></li>
+            <li><a href="sustainability.html" class="text-muted-foreground hover:text-foreground transition-colors">Sustainability</a></li>
+            <li><a href="#" class="text-muted-foreground hover:text-foreground transition-colors">Careers</a></li>
+          </ul>
+        </div>
+        
+        <!-- Customer Service -->
+        <div>
+          <h3 class="text-lg font-medium mb-4">Customer Service</h3>
+          <ul class="space-y-2">
+            <li><a href="faq.html" class="text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
+            <li><a href="shipping.html" class="text-muted-foreground hover:text-foreground transition-colors">Shipping</a></li>
+            <li><a href="returns.html" class="text-muted-foreground hover:text-foreground transition-colors">Returns</a></li>
+            <li><a href="track-order.html" class="text-muted-foreground hover:text-foreground transition-colors">Track Order</a></li>
+          </ul>
+        </div>
+        
+        <!-- Newsletter -->
+        <div>
+          <h3 class="text-lg font-medium mb-4">Newsletter</h3>
+          <p class="text-sm text-muted-foreground mb-4 max-w-xs">
+            Sign up for our newsletter to receive updates and exclusive offers.
+          </p>
+          
+          <div class="flex">
+            <input 
+              type="email" 
+              placeholder="Your email address" 
+              class="min-w-0 flex-1 rounded-l-lg border border-border bg-transparent px-4 py-2.5 text-sm"
+            >
+            <button 
+              type="submit" 
+              class="inline-flex items-center justify-center rounded-r-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-opacity-90"
+            >
+              Subscribe
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center">
+        <p class="text-sm text-muted-foreground">
+          © 2025 Essentials. All rights reserved.
+        </p>
+        
+        <div class="flex space-x-6 mt-4 md:mt-0">
+          <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">
+            <span class="sr-only">Instagram</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+            </svg>
+          </a>
+          <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">
+            <span class="sr-only">Twitter</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+            </svg>
+          </a>
+          <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">
+            <span class="sr-only">Facebook</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+  
+  <!-- Page-specific JavaScript -->
+  <script>
+    // Mobile menu functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const menuToggle = document.getElementById('menuToggle');
+      const closeMenu = document.getElementById('closeMenu');
+      const mobileMenu = document.getElementById('mobileMenu');
+      
+      if (menuToggle && closeMenu && mobileMenu) {
+        menuToggle.addEventListener('click', function() {
+          mobileMenu.classList.remove('translate-x-full');
+        });
+        
+        closeMenu.addEventListener('click', function() {
+          mobileMenu.classList.add('translate-x-full');
+        });
+      }
+      
+      // Initialize Stripe
+      const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx'); // This is a Stripe test publishable key
+      
+      // Handle checkout button
+      const checkoutButton = document.getElementById('checkout-button');
+      if (checkoutButton) {
+        checkoutButton.addEventListener('click', async function() {
+          // First, validate form fields
+          const email = document.getElementById('email');
+          const firstName = document.getElementById('firstName');
+          const lastName = document.getElementById('lastName');
+          const address = document.getElementById('address');
+          const city = document.getElementById('city');
+          const country = document.getElementById('country');
+          
+          if (!email.value || !firstName.value || !lastName.value || !address.value || !city.value || !country.value) {
+            alert('Please fill out all required fields before proceeding to checkout.');
+            return;
+          }
+          
+          try {
+            // Create a Stripe checkout session
+            const response = await fetch('/api/create-checkout-session', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: email.value,
+                shipping: {
+                  name: `${firstName.value} ${lastName.value}`,
+                  address: {
+                    line1: address.value,
+                    city: city.value,
+                    country: country.value
+                  }
+                }
+              })
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Something went wrong with checkout.');
+            }
+            
+            const session = await response.json();
+            
+            // Redirect to Stripe Checkout
+            const result = await stripe.redirectToCheckout({
+              sessionId: session.id
+            });
+            
+            if (result.error) {
+              alert(result.error.message);
+            }
+          } catch (error) {
+            console.error('Error during checkout:', error);
+            alert('There was an error processing your checkout. Please try again.');
+          }
+        });
+      }
+      
+      // Shipping method selection
+      const shippingMethods = document.querySelectorAll('input[name="shippingMethod"]');
+      if (shippingMethods.length) {
+        shippingMethods.forEach(method => {
+          method.addEventListener('change', function() {
+            // In a real application, this would update the order total
+            console.log('Shipping method changed:', this.id);
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
