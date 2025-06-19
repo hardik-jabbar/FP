@@ -14,9 +14,7 @@
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <!-- Add Auth0 for authentication -->
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Google Maps will be embedded via iframe -->
 </head>
 <body class="bg-background text-foreground">
 <!-- Navigation Header -->
@@ -165,7 +163,25 @@
   <!-- Dealership Locator -->
   <section id="dealership-locator" class="mt-12 space-y-6">
     <h2 class="text-2xl font-semibold">Locate Nearby Dealerships for Service</h2>
-    <div id="dealershipMap" class="h-96 rounded-lg"></div>
+    <div class="map-container rounded-xl overflow-hidden shadow-2xl" style="height: 500px; position: relative;">
+      <!-- Google Maps iframe -->
+      <iframe 
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3430.783061389201!2d76.7794!3d30.7333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390fed0be66ec96b%3A0x6d5f394f7c196d87!2sSector%2017%2C%20Chandigarh%2C%20India!5e0!3m2!1sen!2sus!4v1620000000000!5m2!1sen!2sus" 
+        width="100%" 
+        height="100%" 
+        style="border:0;" 
+        allowfullscreen="" 
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+      
+      <!-- Location info overlay -->
+      <div class="absolute top-4 left-4 bg-white bg-opacity-90 p-4 rounded-lg shadow-md max-w-xs">
+        <h3 class="font-bold text-lg mb-2">FarmPower Service Center</h3>
+        <p class="text-sm mb-1">Sector 17, Chandigarh, India</p>
+        <p class="text-xs text-gray-600">Open: Mon-Sat, 9:00 AM - 6:00 PM</p>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -732,19 +748,20 @@
       alert('Slot booked! You will receive a reminder email (demo).');
     });
 
-    // Initialize Leaflet map for dealership locator
-    const map = L.map('dealershipMap').setView([30.7333, 76.7794], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    const marker = L.marker([30.7333, 76.7794]).addTo(map)
-      .bindPopup('<strong>Sample Dealership</strong><br>London, UK')
-      .openPopup();
-
+    // Google Maps is embedded via iframe, no JavaScript initialization needed
   </script>
-  <script src="assets/js/floatingChatbot.js"></script>
+  <style>
+    .map-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 0.75rem;
+    }
+    @media (max-width: 768px) {
+      .map-container {
+        height: 400px;
+      }
+    }
+  </style>
 </body>
-</html> 
+</html>

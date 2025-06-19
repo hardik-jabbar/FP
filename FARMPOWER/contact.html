@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+YB9mZ18AJIcTy/1iYDUCLaLOtdWV9AMa2bd9rp+0=" crossorigin=""/>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1jRVvV4kPHEaxs3gKimWAJ6CIUDnksE/d5CIzN/4=" crossorigin=""></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -495,20 +497,38 @@
           </p>
         </div>
         
-        <div class="rounded-xl overflow-hidden shadow-lg h-96 animate-scale-in">
-          <!-- Interactive Leaflet Map -->
-          <div id="map" class="w-full h-full"></div>
-          <!-- Leaflet JS and map init -->
-          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1jRVvV4kPHEaxs3gKimWAJ6CIUDnksE/d5CIzN/4=" crossorigin=""></script>
-          <script>
-            const map = L.map('map').setView([30.7333, 76.7794], 13);
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            L.marker([30.7333, 76.7794]).addTo(map)
-              .bindPopup('FarmPower HQ<br>Chandigarh, IND')
-              .openPopup();
-          </script>
+        <div class="map-container rounded-xl overflow-hidden shadow-2xl" style="height: 500px; position: relative;">
+          <!-- Google Maps iframe -->
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3430.783061389201!2d76.7794!3d30.7333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390fed0be66ec96b%3A0x6d5f394f7c196d87!2sSector%2017%2C%20Chandigarh%2C%20India!5e0!3m2!1sen!2sus!4v1620000000000!5m2!1sen!2sus" 
+            width="100%" 
+            height="100%" 
+            style="border:0;" 
+            allowfullscreen="" 
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+          
+          <!-- Location info overlay -->
+          <div class="absolute top-4 left-4 bg-white bg-opacity-90 p-4 rounded-lg shadow-md max-w-xs">
+            <h3 class="font-bold text-lg mb-2">FarmPower HQ</h3>
+            <p class="text-sm mb-1">Sector 17, Chandigarh, India</p>
+            <p class="text-xs text-gray-600">Open: Mon-Sat, 9:00 AM - 6:00 PM</p>
+          </div>
+          
+          <style>
+            .map-container iframe {
+              width: 100%;
+              height: 100%;
+              border: none;
+              border-radius: 0.75rem;
+            }
+            @media (max-width: 768px) {
+              .map-container {
+                height: 400px;
+              }
+            }
+          </style>
         </div>
       </div>
     </section>
