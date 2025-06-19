@@ -716,39 +716,7 @@
   </div>
 </footer>
 
-  <!-- AI Chat Icon Button -->
-  <button id="ai-chat-button" class="fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all duration-200 z-50">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    </svg>
-  </button>
-
-  <!-- AI Chat Modal -->
-  <div id="ai-chat-modal" class="fixed inset-0 bg-black/50 hidden z-50">
-    <div class="absolute bottom-6 right-6 w-96 h-[500px] bg-secondary border border-border rounded-lg shadow-lg flex flex-col">
-      <div class="flex items-center justify-between p-4 border-b border-border">
-        <h3 class="text-lg font-medium">AI Farming Assistant</h3>
-        <button id="close-chat" class="p-2 hover:bg-background rounded-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-      <div id="chat-window-modal" class="flex-1 p-4 overflow-y-auto space-y-4">
-        <div class="flex justify-start">
-          <div class="bg-muted text-muted-foreground p-3 rounded-lg max-w-[70%]">
-            Hello! I am your AI Farming Assistant. How can I help you today?
-          </div>
-        </div>
-      </div>
-      <div class="border-t border-border p-4 flex items-center space-x-4">
-        <input type="text" id="user-input" class="flex-1 p-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Type your message...">
-        <button id="send-button" class="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
-          Send
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- AI Chat Interface will be injected here by floatingChatbot.js -->
 
   <script>
     // Socket.io removed – real-time updates are not needed at the moment
