@@ -40,3 +40,32 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Large files
+*.zip
+*.tar.gz
+*.dmg
+*.pkg
+*.exe
+
+# Application bundles
+*.app/
+*.app
+
+# Large binary files
+*.bin
+*.dat
+*.dll
+*.so
+*.dylib
+
+# Ignore all files in FARMPOWER/assets/images/ except specific ones
+FARMPOWER/assets/images/**
+!FARMPOWER/assets/images/logo.png
+!FARMPOWER/assets/images/favicon.ico
+
+# Ignore node_modules in subdirectories
+**/node_modules/
+
+# Ignore package-lock files
+**/package-lock.json
