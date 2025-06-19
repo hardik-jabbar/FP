@@ -19,9 +19,11 @@
   // Chat Icon Button (bottom-right)
   const chatBtn = el('button', {
     id: 'ai-chat-button',
-    class: 'fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all duration-200 z-50'
+    class: 'fixed bottom-4 right-4 md:bottom-6 md:right-6 bg-primary text-primary-foreground p-3 md:p-4 rounded-full shadow-lg hover:bg-primary/90 transition-all duration-200 z-50 flex items-center justify-center',
+    'aria-label': 'Open AI Chat',
+    style: 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);'
   });
-  chatBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+  chatBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
 
   // Modal overlay
   const modalOverlay = el('div', {
@@ -31,7 +33,8 @@
 
   // Modal content container
   const modal = el('div', {
-    class: 'absolute bottom-6 right-6 w-96 h-[500px] bg-secondary border border-border rounded-lg shadow-lg flex flex-col'
+    class: 'fixed bottom-4 right-4 left-4 top-4 md:absolute md:bottom-6 md:right-6 md:left-auto md:top-auto w-auto md:w-96 h-auto md:h-[500px] bg-secondary border border-border rounded-lg shadow-lg flex flex-col z-50',
+    style: 'max-height: calc(100vh - 2rem); max-width: calc(100vw - 2rem);'
   });
 
   // Header
@@ -43,7 +46,11 @@
   modal.appendChild(header);
 
   // Chat window
-  const chatWindow = el('div', { id: 'chat-window-modal', class: 'flex-1 p-4 overflow-y-auto space-y-4' });
+  const chatWindow = el('div', { 
+    id: 'chat-window-modal', 
+    class: 'flex-1 p-4 overflow-y-auto space-y-4',
+    style: 'min-height: 0;' // Allows flex item to shrink below content size
+  });
   chatWindow.innerHTML = '<div class="flex justify-start"><div class="bg-muted text-muted-foreground p-3 rounded-lg max-w-[70%]">Hello! I am your AI Farming Assistant. How can I help you today?</div></div>';
   modal.appendChild(chatWindow);
 
@@ -74,7 +81,7 @@
     appendMessage('user', query);
     userInput.value = '';
     try {
-      const response = await fetch('http://localhost:3000/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query })

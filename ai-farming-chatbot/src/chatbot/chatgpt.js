@@ -1,20 +1,42 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-require('dotenv').config();
+// Mock response system for testing
+const mockResponses = {
+  'hello': 'Hello! I\'m your FarmPower AI assistant. How can I help with your farming questions today?',
+  'hi': 'Hi there! I\'m here to help with all your agricultural needs. What would you like to know?',
+  'help': 'I can help with crop advice, soil health, pest control, and general farming questions. What do you need help with?',
+  'soil': 'Healthy soil is key to successful farming. Consider testing your soil pH, adding organic matter, and practicing crop rotation.',
+  'pests': 'Common pests can be managed with integrated pest management (IPM) techniques. What specific pest are you dealing with?',
+  'weather': 'Weather greatly impacts farming. Always check local forecasts and consider using weather-resistant crop varieties.',
+  'fertilizer': 'The right fertilizer depends on your soil type and crops. A soil test can help determine what nutrients your soil needs.',
+  'organic': 'Organic farming focuses on natural methods. Consider composting, natural pest control, and crop diversity.',
+  'default': 'I\'m your FarmPower AI assistant, here to help with all your agricultural questions. How can I assist you today?'
+};
 
-// Use environment variable if set, otherwise fallback to hard-coded key provided by the user.
-const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAxVLfAhKPCsicBlTD37ISpOPW0Leyzaeg';
-const genAI = new GoogleGenerativeAI(API_KEY);
-
-// Keep the original exported name so existing imports continue to work
 const getChatGPTResponse = async (userQuery) => {
-    try {
-        const model = genAI.getGenerativeModel({model: 'models/gemini-2.0-flash'});
-        const result = await model.generateContent(userQuery);
-        return result.response.text();
-    } catch (error) {
-        console.error('Error fetching response from Gemini:', error);
-        throw new Error('Could not fetch response from the AI service.');
+  try {
+    console.log('Processing query:', userQuery);
+    
+    // Simple keyword matching for demo purposes
+    const query = userQuery.toLowerCase().trim();
+    let response = mockResponses.default;
+    
+    // Check for matching keywords
+    for (const [keyword, reply] of Object.entries(mockResponses)) {
+      if (query.includes(keyword)) {
+        response = reply;
+        break;
+      }
     }
+    
+    // Add a small delay to simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    console.log('Sending response:', response);
+    return response;
+    
+  } catch (error) {
+    console.error('Error in getChatGPTResponse:', error);
+    return "I'm having some trouble processing your request. Please try again with a different question.";
+  }
 };
 
 module.exports = { getChatGPTResponse };
