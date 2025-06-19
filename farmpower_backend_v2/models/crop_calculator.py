@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
-from ..database import Base
+from .base import Base, TimestampMixin
 
-class CropCalculation(Base):
+class CropCalculation(Base, TimestampMixin):
     """SQLAlchemy model for storing crop calculations."""
     __tablename__ = "crop_calculations"
 

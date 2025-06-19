@@ -6,15 +6,17 @@
     <title>FarmPower - Equipment Diagnostics & GPS Tracking</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Mapbox for GPS tracking -->
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Socket.io for real-time updates -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<body class="bg-gray-50">
+<body class="bg-background text-foreground">
+>
 <!-- Navigation Header -->
 <header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
   <div class="container mx-auto px-4 md:px-6">
@@ -224,6 +226,16 @@
     </header>
 
     <main class="container mx-auto px-4 py-8">
+
+        <!-- Diagnostics Upload -->
+        <section class="bg-white p-6 rounded-lg shadow-sm mb-8">
+            <h2 class="text-lg font-semibold mb-4">Upload Diagnostics Log</h2>
+            <form id="diagForm" class="flex flex-col md:flex-row items-start md:items-center gap-4">
+                <input type="file" name="file" required class="block">
+                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">Upload</button>
+            </form>
+            <p id="diagResponse" class="mt-4 text-sm text-gray-600"></p>
+        </section>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Equipment Status Overview -->
             <div class="md:col-span-2 grid grid-cols-3 gap-4">
@@ -345,14 +357,8 @@
     </div>
 
     <script>
-        // Initialize Mapbox
-        mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN';
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [-96, 37.8], // Center of US
-            zoom: 3
-        });
+        // Initialize Leaflet (moved to bottom init script)
+
 
         // Socket.io connection
         const socket = io('http://localhost:3000');
@@ -520,5 +526,48 @@
     }
   });
 </script> 
+  <script>
+    document.addEventListener('DOMContentLoaded',()=>{
+      // Diagnostics upload form handler
+      const diagForm = document.getElementById('diagForm');
+      if (diagForm) {
+        diagForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const fileInput = diagForm.querySelector('input[type="file"]');
+          if (!fileInput.files.length) {
+            alert('Please select a diagnostics file to upload.');
+            return;
+          }
+          const formData = new FormData();
+          formData.append('file', fileInput.files[0]);
+
+          try {
+            const response = await fetch('/api/diagnostics', {
+              method: 'POST',
+              body: formData
+            });
+            if (response.ok) {
+              const data = await response.json();
+              document.getElementById('diagResponse').textContent = `Received ${data.filename} (${data.size_bytes} bytes)`;
+              diagForm.reset();
+            } else {
+              const errText = await response.text();
+              throw new Error(errText);
+            }
+          } catch (error) {
+            console.error('Diagnostics upload failed:', error);
+            alert('Failed to upload diagnostics. Please try again.');
+          }
+        });
+      }
+
+
+      const map=L.map('map').setView([30.7333,76.7794],13);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+      L.marker([30.7333,76.7794]).addTo(map).bindPopup('A pretty CSS popup.<br> Easily customizable.').openPopup();
+    });
+  </script>
+  <script src="assets/js/floatingChatbot.js"></script>
 </body>
 </html> 

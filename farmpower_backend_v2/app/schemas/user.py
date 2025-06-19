@@ -43,6 +43,11 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[EmailStr] = None
+
+# --- Schema for JSON Login ---
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=128)
     # You can add other fields to token data like user_id, roles if needed
 
 # --- Schemas for OTP ---

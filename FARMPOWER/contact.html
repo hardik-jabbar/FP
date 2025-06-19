@@ -6,6 +6,8 @@
   <title>Contact - FarmPower</title>
   <meta name="description" content="Get in touch with the FarmPower team. We're here to help with any questions about our tractors, equipment, or smart farming services.">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+YB9mZ18AJIcTy/1iYDUCLaLOtdWV9AMa2bd9rp+0=" crossorigin=""/>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -184,7 +186,7 @@
       <!-- Main Navigation -->
       <ul class="hidden md:flex items-center space-x-8">
         <li>
-          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+          <a href="marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
             Equipment Market
           </a>
         </li>
@@ -364,55 +366,9 @@
   checkAuth();
 </script> 
   <!-- Navigation -->
-  <header id="navigation" class="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border">
-    <div class="container mx-auto px-4 md:px-6">
-      <div class="flex h-16 items-center justify-between">
-        <a href="index.html" class="text-2xl font-medium tracking-tight text-white transition-opacity hover:opacity-80">
-          <span class="sr-only">Navigate home</span>
-          FarmPower.
-        </a>
-        
-        <nav class="hidden md:flex items-center space-x-8">
-          <a href="shop.html" class="nav-link">Marketplace</a>
-          <a href="collections.html" class="nav-link">GPS Tracking</a>
-          <a href="about.html" class="nav-link">Land Mapping</a>
-          <a href="contact.html" class="nav-link">Maintenance</a>
-        </nav>
-        
-        <div class="flex items-center space-x-4">
-          <button aria-label="Search" class="btn-icon hidden md:flex">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-          </button>
-          
-          <a href="dashboard.html" aria-label="Dashboard" class="btn-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-          </a>
-        </div>
-      </div>
-    </div>
-  </header>
+
 
   <main>
-    <!-- Contact Header -->
-    <section class="bg-secondary py-10 md:py-16">
-      <div class="container mx-auto px-4 md:px-6">
-        <div class="flex flex-col items-center text-center">
-          <h1 class="text-3xl md:text-5xl font-medium tracking-tight text-white animate-fade-in">Get in Touch</h1>
-          <p class="mt-4 max-w-2xl text-muted-foreground md:text-lg animate-fade-in">
-            Have questions about our smart farming solutions? We're here to help you optimize your agricultural operations.
-          </p>
-        </div>
-      </div>
-    </section>
-
     <!-- Contact Section -->
     <section class="py-16 md:py-24 bg-background">
       <div class="container mx-auto px-4 md:px-6">
@@ -458,7 +414,7 @@
                 </div>
                 <div>
                   <h4 class="font-medium text-white">Location</h4>
-                  <p class="mt-1 text-muted-foreground">123 Vip Street, Hoshiarpur, IND</p>
+                  <p class="mt-1 text-muted-foreground">123 Vip Street, Chandigarh, IND</p>
                 </div>
               </div>
             </div>
@@ -473,83 +429,89 @@
                     <td class="py-1 text-white">9:00 AM - 6:00 PM</td>
                   </tr>
                   <tr>
-                    <td class="py-1 text-muted-foreground">Saturday</t<!-- Footer -->
-<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
-  <div class="container mx-auto px-4">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-      <!-- Company Info -->
-      <div>
-        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
-        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
-        <div class="flex space-x-4">
-          <a href="#" class="text-gray-400 hover:text-white transition-colors">
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-          </a>
-          <a href="#" class="text-gray-400 hover:text-white transition-colors">
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-            </svg>
-          </a>
-          <a href="#" class="text-gray-400 hover:text-white transition-colors">
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
-            </svg>
-          </a>
+                    <td class="py-1 text-muted-foreground">Saturday</td>
+                    <td class="py-1 text-white">10:00 AM - 5:00 PM</td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 text-muted-foreground">Sunday</td>
+                    <td class="py-1 text-white">Emergency Support Only</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="rounded-xl border border-border bg-secondary/50 p-6 shadow-lg animate-slide-up">
+            <form class="space-y-6">
+              <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label for="firstName" class="block text-sm font-medium text-white">First Name</label>
+                  <input type="text" id="firstName" class="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                  <label for="lastName" class="block text-sm font-medium text-white">Last Name</label>
+                  <input type="text" id="lastName" class="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+              </div>
+              
+              <div>
+                <label for="email" class="block text-sm font-medium text-white">Email</label>
+                <input type="email" id="email" class="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+              </div>
+              
+              <div>
+                <label for="subject" class="block text-sm font-medium text-white">Subject</label>
+                <select id="subject" class="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option value="">Select a topic</option>
+                  <option value="sales">Equipment Sales</option>
+                  <option value="service">Maintenance & Service</option>
+                  <option value="gps">GPS & Mapping</option>
+                  <option value="support">Technical Support</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label for="message" class="block text-sm font-medium text-white">Message</label>
+                <textarea id="message" rows="4" class="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+              </div>
+              
+              <button type="submit" class="w-full rounded-lg bg-primary px-6 py-3 text-primary-foreground shadow transition-colors hover:bg-opacity-90">
+                Send Message
+              </button>
+            </form>
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- Quick Links -->
-      <div>
-        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-        <ul class="space-y-2">
-          <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
-          <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
-          <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
-          <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
-          <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
-        </ul>
-      </div>
-
-      <!-- Support -->
-      <div>
-        <h3 class="text-lg font-semibold mb-4">Support</h3>
-        <ul class="space-y-2">
-          <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
-          <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
-          <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
-          <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
-          <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
-        </ul>
-      </div>
-
-      <!-- Newsletter -->
-      <div>
-        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
-        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
-        <form class="space-y-2">
-          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
-          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
-            Subscribe
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Bottom Bar -->
-    <div class="pt-8 border-t border-dark-300">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
-        <div class="flex space-x-4 mt-4 md:mt-0">
-          <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
-          <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
-          <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+    <!-- Map Section -->
+    <section class="py-16 md:py-24 bg-secondary">
+      <div class="container mx-auto px-4 md:px-6">
+        <div class="text-center mb-10">
+          <h2 class="text-2xl md:text-3xl font-medium tracking-tight text-white">Visit Our Center</h2>
+          <p class="mt-2 text-muted-foreground md:text-lg">
+            Experience our state-of-the-art farming equipment and smart solutions in person
+          </p>
+        </div>
+        
+        <div class="rounded-xl overflow-hidden shadow-lg h-96 animate-scale-in">
+          <!-- Interactive Leaflet Map -->
+          <div id="map" class="w-full h-full"></div>
+          <!-- Leaflet JS and map init -->
+          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1jRVvV4kPHEaxs3gKimWAJ6CIUDnksE/d5CIzN/4=" crossorigin=""></script>
+          <script>
+            const map = L.map('map').setView([30.7333, 76.7794], 13);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.marker([30.7333, 76.7794]).addTo(map)
+              .bindPopup('FarmPower HQ<br>Chandigarh, IND')
+              .openPopup();
+          </script>
         </div>
       </div>
-    </div>
-  </div>
-</footer>
+    </section>
 
 <script>
   // Newsletter form submission
@@ -577,7 +539,21 @@
       alert('Failed to subscribe. Please try again.');
     }
   });
-</script>    <!-- FAQ Item 1 -->
+</script>    
+
+ <!-- FAQ Section -->
+    <section class="py-16 md:py-24 bg-background">
+      <div class="container mx-auto px-4 md:px-6">
+        <div class="text-center mb-12">
+          <h2 class="text-2xl md:text-3xl font-medium tracking-tight text-white">Frequently Asked Questions</h2>
+          <p class="mt-2 text-muted-foreground md:text-lg max-w-2xl mx-auto">
+            Find answers to common questions about our tractors, equipment, and smart farming services
+          </p>
+        </div>
+        
+        <div class="max-w-3xl mx-auto space-y-6">
+          
+          <!-- FAQ Item 1 -->
           <div class="border border-border rounded-lg p-6 bg-secondary/50 animate-slide-up">
             <h3 class="text-lg font-medium mb-2 text-white">What financing options are available for tractors?</h3>
             <p class="text-muted-foreground">We offer flexible financing options including leasing, rent-to-own, and traditional financing with competitive interest rates. Our financial experts can help you choose the best option for your farming needs and budget.</p>
@@ -612,94 +588,110 @@
   </main>
 
   <!-- Footer -->
-  <footer class="border-t border-border bg-background">
-    <div class="container mx-auto px-4 md:px-6 py-12 md:py-16">
-      <div class="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
-        <div>
-          <h3 class="text-lg font-medium mb-4 text-white">Solutions</h3>
-          <ul class="space-y-2">
-            <li><a href="shop.html" class="text-muted-foreground hover:text-white transition-colors">Equipment Sales</a></li>
-            <li><a href="shop.html" class="text-muted-foreground hover:text-white transition-colors">GPS Tracking</a></li>
-            <li><a href="shop.html" class="text-muted-foreground hover:text-white transition-colors">Land Mapping</a></li>
-            <li><a href="shop.html" class="text-muted-foreground hover:text-white transition-colors">Maintenance</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="text-lg font-medium mb-4 text-white">Services</h3>
-          <ul class="space-y-2">
-            <li><a href="collections.html" class="text-muted-foreground hover:text-white transition-colors">Remote Diagnostics</a></li>
-            <li><a href="collections.html" class="text-muted-foreground hover:text-white transition-colors">Equipment Training</a></li>
-            <li><a href="collections.html" class="text-muted-foreground hover:text-white transition-colors">Financing</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="text-lg font-medium mb-4 text-white">Company</h3>
-          <ul class="space-y-2">
-            <li><a href="about.html" class="text-muted-foreground hover:text-white transition-colors">About Us</a></li>
-            <li><a href="contact.html" class="text-muted-foreground hover:text-white transition-colors">Contact</a></li>
-            <li><a href="sustainability.html" class="text-muted-foreground hover:text-white transition-colors">Sustainability</a></li>
-            <li><a href="#" class="text-muted-foreground hover:text-white transition-colors">Careers</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="text-lg font-medium mb-4 text-white">Support</h3>
-          <ul class="space-y-2">
-            <li><a href="faq.html" class="text-muted-foreground hover:text-white transition-colors">FAQ</a></li>
-            <li><a href="support.html" class="text-muted-foreground hover:text-white transition-colors">Technical Support</a></li>
-            <li><a href="warranty.html" class="text-muted-foreground hover:text-white transition-colors">Warranty</a></li>
-            <li><a href="service.html" class="text-muted-foreground hover:text-white transition-colors">Service Request</a></li>
-          </ul>
+<footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <!-- Company Info -->
+      <div>
+        <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+        <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+        <div class="flex space-x-4">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+            </svg>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+            </svg>
+          </a>
         </div>
       </div>
-      
-      <div class="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center">
-        <p class="text-sm text-muted-foreground">
-          &copy; 2024 FarmPower. All rights reserved.
-        </p>
-        
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+        <ul class="space-y-2">
+          <li><a href="index.html" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+          <li><a href="marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+          <li><a href="collections.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+          <li><a href="parts-marketplace.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+          <li><a href="crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Support</h3>
+        <ul class="space-y-2">
+          <li><a href="faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+          <li><a href="collections.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          <li><a href="shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+          <li><a href="returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+          <li><a href="terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+        </ul>
+      </div>
+
+      <!-- Newsletter -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+        <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+        <form class="space-y-2">
+          <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+          <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+            Subscribe
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 border-t border-dark-300">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
         <div class="flex space-x-4 mt-4 md:mt-0">
-          <a href="#" class="btn-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-            </svg>
-          </a>
-          <a href="#" class="btn-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-            </svg>
-          </a>
-          <a href="#" class="btn-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
-            </svg>
-          </a>
-          <a href="#" class="btn-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-              <rect x="2" y="9" width="4" height="12"></rect>
-              <circle cx="4" cy="4" r="2"></circle>
-            </svg>
-          </a>
+          <a href="privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+          <a href="terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+          <a href="settings.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
         </div>
       </div>
     </div>
-  </footer>
+  </div>
+</footer>
 
-  <script>
-    // Mobile menu toggle
-    const menuToggle = document.getElementById('menuToggle');
-    const closeMenu = document.getElementById('closeMenu');
-    const mobileMenu = document.getElementById('mobileMenu');
+<script>
+  // Newsletter form submission
+  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.querySelector('input[type="email"]').value;
     
-    menuToggle.addEventListener('click', () => {
-      mobileMenu.classList.remove('translate-x-full');
-    });
-    
-    closeMenu.addEventListener('click', () => {
-      mobileMenu.classList.add('translate-x-full');
-    });
-  </script>
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        alert('Thank you for subscribing!');
+        e.target.reset();
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to subscribe. Please try again.');
+    }
+  });
+</script> 
+  <script src="assets/js/floatingChatbot.js"></script>
 </body>
 </html>

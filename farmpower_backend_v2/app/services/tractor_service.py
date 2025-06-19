@@ -22,34 +22,31 @@ class TractorService:
     ) -> List[TractorModel]:
         query = db.query(TractorModel)
 
-        if owner_id is not None:
-            query = query.filter(TractorModel.owner_id == owner_id)
         if brand:
             query = query.filter(TractorModel.brand.ilike(f"%{brand}%"))
         if location:
             query = query.filter(TractorModel.location.ilike(f"%{location}%"))
-        if min_price is not None:
+        if min_price:
             query = query.filter(TractorModel.price >= min_price)
-        if max_price is not None:
+        if max_price:
             query = query.filter(TractorModel.price <= max_price)
+        if owner_id:
+            query = query.filter(TractorModel.owner_id == owner_id)
 
-        return query.order_by(TractorModel.created_at.desc()).offset(skip).limit(limit).all()
+        return query.offset(skip).limit(limit).all()
 
     def create_tractor(self, db: Session, tractor_in: TractorCreate, owner_id: int) -> TractorModel:
-        tractor_data = tractor_in.model_dump() # Pydantic V2
-        db_tractor = TractorModel(**tractor_data, owner_id=owner_id)
+        db_tractor = TractorModel(**tractor_in.model_dump(), owner_id=owner_id)
         db.add(db_tractor)
         db.commit()
         db.refresh(db_tractor)
         return db_tractor
 
     def update_tractor(self, db: Session, db_tractor: TractorModel, tractor_in: TractorUpdate) -> TractorModel:
-        update_data = tractor_in.model_dump(exclude_unset=True) # Pydantic V2, exclude_unset for partial updates
-
-        for field, value in update_data.items():
-            setattr(db_tractor, field, value)
-
-        db.add(db_tractor) # Mark as dirty
+        update_data = tractor_in.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_tractor, key, value)
+        db.add(db_tractor)
         db.commit()
         db.refresh(db_tractor)
         return db_tractor
@@ -59,6 +56,6 @@ class TractorService:
         if db_tractor:
             db.delete(db_tractor)
             db.commit()
-        return db_tractor # Returns the deleted object or None
+        return db_tractor
 
-tractor_service = TractorService() # Instantiate the service
+tractor_service = TractorService()

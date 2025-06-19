@@ -1,0 +1,108 @@
+  // Function to fetch diagnostic reports with error handling
+  async function fetchDiagnosticReports() {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'flex justify-center items-center p-8';
+    loadingDiv.innerHTML = `
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    `;
+    reportsContainer.innerHTML = '';
+    reportsContainer.appendChild(loadingDiv);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/diagnostic/reports');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const reports = await response.json();
+      
+      reportsContainer.innerHTML = '';
+      if (reports.length === 0) {
+        reportsContainer.innerHTML = `
+          <div class="text-center p-8">
+            <p class="text-lg text-gray-600">No diagnostic reports found.</p>
+          </div>
+        `;
+        return;
+      }
+
+      reports.forEach(report => {
+        const reportCard = createReportCard(report);
+        reportsContainer.appendChild(reportCard);
+      });
+    } catch (error) {
+      console.error('Error fetching diagnostic reports:', error);
+      reportsContainer.innerHTML = `
+        <div class="text-center p-8">
+          <p class="text-lg text-red-600">Error loading diagnostic reports. Please try again later.</p>
+          <button onclick="fetchDiagnosticReports()" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+            Retry
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  // Function to fetch maintenance schedules with error handling
+  async function fetchMaintenanceSchedules() {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'flex justify-center items-center p-8';
+    loadingDiv.innerHTML = `
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    `;
+    schedulesContainer.innerHTML = '';
+    schedulesContainer.appendChild(loadingDiv);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/diagnostic/maintenance');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const schedules = await response.json();
+      
+      schedulesContainer.innerHTML = '';
+      if (schedules.length === 0) {
+        schedulesContainer.innerHTML = `
+          <div class="text-center p-8">
+            <p class="text-lg text-gray-600">No maintenance schedules found.</p>
+          </div>
+        `;
+        return;
+      }
+
+      schedules.forEach(schedule => {
+        const scheduleCard = createScheduleCard(schedule);
+        schedulesContainer.appendChild(scheduleCard);
+      });
+    } catch (error) {
+      console.error('Error fetching maintenance schedules:', error);
+      schedulesContainer.innerHTML = `
+        <div class="text-center p-8">
+          <p class="text-lg text-red-600">Error loading maintenance schedules. Please try again later.</p>
+          <button onclick="fetchMaintenanceSchedules()" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+            Retry
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  // Function to handle filter changes
+  function handleFilterChange() {
+    const activeTab = document.querySelector('[data-tab].active');
+    if (activeTab.dataset.tab === 'reports') {
+      fetchDiagnosticReports();
+    } else {
+      fetchMaintenanceSchedules();
+    }
+  }
+
+  // Add event listeners for filters
+  document.querySelectorAll('.filter-select').forEach(select => {
+    select.addEventListener('change', handleFilterChange);
+  });
+
+  // Initialize the page
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchDiagnosticReports();
+    fetchMaintenanceSchedules();
+  }); 

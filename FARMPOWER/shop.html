@@ -176,26 +176,46 @@
   </section>
 </main>
 
-<!-- Footer -->
+  <!-- Footer -->
 <div id="footer"></div>
 
-<script>
-  // Load header and footer
+  <script>
+    // Load header and footer
   fetch('components/header.html')
-    .then(response => response.text())
+      .then(response => response.text())
     .then(html => {
       document.getElementById('header').innerHTML = html;
       cart.updateCartCount(); // Update cart count in header after it's loaded
-    });
+      });
 
   fetch('components/footer.html')
-    .then(response => response.text())
+      .then(response => response.text())
     .then(html => {
       document.getElementById('footer').innerHTML = html;
-    });
+      });
 
   // Load products when the page loads
-  document.addEventListener('DOMContentLoaded', async () => {
+  // Dummy tractors fallback
+const fallbackTractors=[
+  {id:1,name:'Kubota L2501',price:26000,description:'Compact tractor ideal for small farms.',image_url:'https://source.unsplash.com/600x400?kubota'},
+  {id:2,name:'Case IH Farmall 75C',price:39000,description:'75-HP tractor with cab and loader.',image_url:'https://source.unsplash.com/600x400?caseIH'},
+  {id:3,name:'Deutz-Fahr 5080D',price:41000,description:'Efficient German-engineered utility tractor.',image_url:'https://source.unsplash.com/600x400?deutz'}
+];
+function renderCard(t){return `<div class=\"card-hover bg-dark-200 rounded-lg overflow-hidden\">
+  <img src=\"${t.image_url}\" alt=\"${t.name}\" class=\"w-full h-48 object-cover\">
+  <div class=\"p-4\">
+    <h3 class=\"text-lg font-semibold mb-2\">${t.name}</h3>
+    <p class=\"text-gray-400 mb-4\">${t.description}</p>
+    <span class=\"text-xl font-bold\">$${t.price.toLocaleString()}</span>
+  </div>
+</div>`;}
+
+function populate(list){
+  const f=document.getElementById('featuredListings');if(f)f.innerHTML=list.map(renderCard).join('');
+  const g=document.getElementById('tractorsList');if(g)g.innerHTML=list.map(renderCard).join('');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
     try {
       // Get featured listings
       const featured = await api.getFeatured();
@@ -228,23 +248,24 @@
             <div class="p-4">
               <h3 class="text-lg font-semibold mb-2">${tractor.name}</h3>
               <p class="text-gray-400 mb-4">${tractor.description}</p>
-              <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center">
                 <span class="text-xl font-bold">$${tractor.price.toLocaleString()}</span>
                 <button onclick="viewTractor(${tractor.id})" class="bg-primary text-primary-foreground px-4 py-2 rounded-lg">
-                  View Details
-                </button>
-              </div>
+                View Details
+              </button>
             </div>
           </div>
+        </div>
         `).join('');
-      }
+    }
     } catch (error) {
       console.error('Error loading products:', error);
+      populate(fallbackTractors);
       // Show error message to user
       const featuredContainer = document.getElementById('featuredListings');
-      if (featuredContainer) featuredContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">Error loading featured listings. Please try again later.</p>';
+      if(featuredContainer && featuredContainer.childElementCount===0){featuredContainer.innerHTML='<p class="text-red-500 text-center col-span-full">Error loading featured listings.</p>';}
       const tractorsContainer = document.getElementById('tractorsList');
-      if (tractorsContainer) tractorsContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">Error loading all tractors. Please try again later.</p>';
+      if(tractorsContainer && tractorsContainer.childElementCount===0){tractorsContainer.innerHTML='<p class="text-red-500 text-center col-span-full">Error loading tractors.</p>';}
     }
   });
 
@@ -252,7 +273,8 @@
   function viewTractor(id) {
     window.location.href = `tractor-detail.html?id=${id}`;
   }
-</script>
+  </script>
 
+  <script src="assets/js/floatingChatbot.js"></script>
 </body>
 </html>

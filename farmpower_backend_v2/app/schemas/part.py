@@ -13,7 +13,7 @@ class PartBase(BaseModel):
     description: Optional[str] = None
     condition: Optional[str] = None
     image_urls: List[str] = []
-    stock: int
+    quantity: int
 
 # Schema for creating a new part
 class PartCreate(PartBase):
@@ -30,7 +30,7 @@ class PartUpdate(BaseModel):
     description: Optional[str] = None
     condition: Optional[str] = None
     image_urls: Optional[List[str]] = None
-    stock: Optional[int] = None
+    quantity: Optional[int] = None
 
 # Schema for reading/returning part data
 class PartSchema(PartBase):

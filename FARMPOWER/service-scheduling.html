@@ -14,6 +14,9 @@
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <!-- Add Auth0 for authentication -->
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="bg-background text-foreground">
 <!-- Navigation Header -->
@@ -29,7 +32,7 @@
       <!-- Main Navigation -->
       <ul class="hidden md:flex items-center space-x-8">
         <li>
-          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+          <a href="marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
             Equipment Market
           </a>
         </li>
@@ -134,6 +137,37 @@
     </div>
   </div>
 </header>
+
+<!-- Service Scheduling Section -->
+<main class="container mx-auto px-4 md:px-6 py-12 space-y-16">
+  <!-- Provider Publish Slot -->
+  <section id="provider-section" class="hidden space-y-6">
+    <h2 class="text-2xl font-semibold">Publish Service Slot</h2>
+    <div class="flex flex-col md:flex-row md:items-end gap-4">
+      <div>
+        <label for="slotDateTime" class="block mb-2 text-sm font-medium">Date &amp; Time</label>
+        <input id="slotDateTime" class="flatpickr-input w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground" placeholder="Select date & time" readonly>
+      </div>
+      <div class="flex-1">
+        <label for="slotDescription" class="block mb-2 text-sm font-medium">Description</label>
+        <input id="slotDescription" type="text" class="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground" placeholder="e.g. Tractor engine tune-up">
+      </div>
+      <button id="addSlotBtn" class="h-10 px-6 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Add Slot</button>
+    </div>
+  </section>
+
+  <!-- Farmer View Slots -->
+  <section>
+    <h2 class="text-2xl font-semibold mb-6">Available Service Slots</h2>
+    <div id="slotsContainer" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+  </section>
+
+  <!-- Dealership Locator -->
+  <section id="dealership-locator" class="mt-12 space-y-6">
+    <h2 class="text-2xl font-semibold">Locate Nearby Dealerships for Service</h2>
+    <div id="dealershipMap" class="h-96 rounded-lg"></div>
+  </section>
+</main>
 
 <script>
   // Toggle mobile menu
@@ -641,5 +675,76 @@
     }
   });
 </script> 
+  <script src="assets/js/floatingChatbot.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    /* Role detection (very naive). In real app, replace with backend-supplied role */
+    const userRole = localStorage.getItem('role') || 'farmer'; // 'provider' or 'farmer'
+
+    const providerSection = document.getElementById('provider-section');
+    if (userRole === 'provider') providerSection.classList.remove('hidden');
+
+    const fp = flatpickr('#slotDateTime', { enableTime: true, dateFormat: 'Y-m-d H:i' });
+
+    const getSlots = () => JSON.parse(localStorage.getItem('serviceSlots') || '[]');
+    const saveSlots = (slots) => localStorage.setItem('serviceSlots', JSON.stringify(slots));
+
+    const renderSlots = () => {
+      const container = document.getElementById('slotsContainer');
+      container.innerHTML = '';
+      const slots = getSlots();
+      if (!slots.length) {
+        container.innerHTML = '<p class="text-muted-foreground">No slots yet.</p>'; return;
+      }
+      slots.forEach((s, idx) => {
+        const card = document.createElement('div');
+        card.className = 'border border-border rounded-lg p-4 flex flex-col gap-3';
+        card.innerHTML = `
+          <h3 class="font-medium">${s.description}</h3>
+          <p class="text-sm text-muted-foreground">${new Date(s.datetime).toLocaleString()}</p>
+          <button data-idx="${idx}" class="bookBtn inline-flex items-center justify-center mt-auto rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90" ${s.booked? 'disabled class="opacity-50 cursor-not-allowed"': ''}>${s.booked? 'Booked':'Book'}</button>`;
+        container.appendChild(card);
+      });
+    };
+
+    renderSlots();
+
+    // Provider adds slot
+    document.getElementById('addSlotBtn')?.addEventListener('click', () => {
+      const dt = fp.selectedDates[0];
+      const desc = document.getElementById('slotDescription').value.trim();
+      if (!dt || !desc) return alert('Pick date/time and enter description');
+      const slots = getSlots();
+      slots.push({ datetime: dt.toISOString(), description: desc, booked: false });
+      saveSlots(slots);
+      fp.clear(); document.getElementById('slotDescription').value='';
+      renderSlots();
+    });
+
+    // Farmer booking
+    document.getElementById('slotsContainer').addEventListener('click', (e) => {
+      if (!e.target.matches('.bookBtn')) return;
+      const idx = e.target.dataset.idx;
+      const slots = getSlots();
+      slots[idx].booked = true;
+      saveSlots(slots);
+      renderSlots();
+      alert('Slot booked! You will receive a reminder email (demo).');
+    });
+
+    // Initialize Leaflet map for dealership locator
+    const map = L.map('dealershipMap').setView([30.7333, 76.7794], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const marker = L.marker([30.7333, 76.7794]).addTo(map)
+      .bindPopup('<strong>Sample Dealership</strong><br>London, UK')
+      .openPopup();
+
+  </script>
+  <script src="assets/js/floatingChatbot.js"></script>
 </body>
 </html> 

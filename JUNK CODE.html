@@ -36,3 +36,848 @@
     </div>
   </div>
 </header>
+
+xxxxxxxxxx
+
+ <a href="dashboard.html" aria-label="Dashboard" class="btn-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </a>
+
+xxxxxxxxxx
+
+
+ndakjsndjkasn
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FarmPower - Smart Farming Platform</title>
+  <meta name="description" content="Your all-in-one platform for smart farming, equipment management, and agricultural solutions">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Add Socket.io for real-time updates -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <!-- Add Auth0 for authentication -->
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              DEFAULT: '#f8f8f8',
+              foreground: '#171717'
+            },
+            secondary: {
+              DEFAULT: '#1a1a1a',
+              foreground: '#f8f8f8'
+            },
+            muted: {
+              DEFAULT: '#262626',
+              foreground: '#a3a3a3'
+            },
+            background: '#0a0a0a',
+            foreground: '#f8f8f8',
+            border: '#262626',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.4s ease-out',
+            'scale-in': 'scaleIn 0.3s ease-out',
+            'slide-in': 'slideIn 0.4s ease-out',
+            'slide-up': 'slideUp 0.4s ease-out',
+            'float': 'float 3s ease-in-out infinite'
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            },
+            scaleIn: {
+              '0%': { transform: 'scale(0.95)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' }
+            },
+            slideIn: {
+              '0%': { transform: 'translateX(-20px)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' }
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-5px)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Add authentication initialization -->
+  <script>
+    let auth0Client = null;
+    const configureAuth0 = async () => {
+      auth0Client = await createAuth0Client({
+        domain: 'YOUR_AUTH0_DOMAIN',
+        client_id: 'YOUR_CLIENT_ID',
+        redirect_uri: window.location.origin
+      });
+
+      // Check for authentication on page load
+      try {
+        const isAuthenticated = await auth0Client.isAuthenticated();
+        if (isAuthenticated) {
+          const user = await auth0Client.getUser();
+          updateUIWithUserInfo(user);
+        }
+      } catch (err) {
+        console.error('Error checking authentication', err);
+      }
+    };
+
+    const login = async () => {
+      await auth0Client.loginWithRedirect();
+    };
+
+    const logout = () => {
+      auth0Client.logout({
+        returnTo: window.location.origin
+      });
+    };
+
+    // Update UI based on user info
+    const updateUIWithUserInfo = (user) => {
+      const loginBtn = document.getElementById('loginBtn');
+      const userProfileBtn = document.getElementById('userProfileBtn');
+      const userName = document.getElementById('userName');
+
+      if (user) {
+        loginBtn.classList.add('hidden');
+        userProfileBtn.classList.remove('hidden');
+        userName.textContent = user.name;
+      } else {
+        loginBtn.classList.remove('hidden');
+        userProfileBtn.classList.add('hidden');
+      }
+    };
+
+    // Initialize Auth0 when the page loads
+    window.onload = configureAuth0;
+  </script>
+  <style>
+    /* Custom CSS */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #0a0a0a;
+      color: #f8f8f8;
+    }
+    
+    .glass {
+      background-color: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(38, 38, 38, 0.2);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    
+    .card-hover {
+      transition: all 0.3s;
+    }
+    
+    .card-hover:hover {
+      transform: scale(1.02);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      background-color: rgba(26, 26, 26, 0.8);
+    }
+    
+    .nav-link {
+      position: relative;
+      padding: 4px 8px;
+      transition: all 0.3s;
+      color: #a3a3a3;
+    }
+    
+    .nav-link:hover {
+      color: #f8f8f8;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      width: 0;
+      background-color: #f8f8f8;
+      transition: all 0.3s;
+    }
+    
+    .nav-link:hover::after {
+      width: 100%;
+    }
+    
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      background-color: #1a1a1a;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #f8f8f8;
+      transition: colors 0.2s;
+    }
+    
+    .btn-icon {
+      display: flex;
+      height: 40px;
+      width: 40px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      background-color: rgba(26, 26, 26, 0.8);
+      color: #f8f8f8;
+      transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+      background-color: rgba(38, 38, 38, 0.8);
+    }
+    
+    /* Animation classes */
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+    
+    .animate-scale-in {
+      animation: scaleIn 0.3s ease-out;
+    }
+    
+    .animate-slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+    
+    .animate-slide-up {
+      animation: slideUp 0.4s ease-out;
+    }
+    
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scaleIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+      0% { transform: translateX(-20px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #404040;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #525252;
+    }
+
+    /* AI Chatbot specific styles */
+    .chat-bubble.user {
+      background-color: #2563eb; /* primary color */
+      color: #ffffff; /* primary-foreground */
+      align-self: flex-end;
+      border-bottom-right-radius: 0;
+    }
+
+    .chat-bubble.ai {
+      background-color: #1a1a1a; /* secondary color */
+      color: #f8f8f8; /* secondary-foreground */
+      align-self: flex-start;
+      border-bottom-left-radius: 0;
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground"
+                            
+
+<!-- Navigation Header -->
+<header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+  <div class="container mx-auto px-4 md:px-6">
+    <nav class="flex items-center justify-between py-4">
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center space-x-2">
+        <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
+        <span class="text-xl font-bold">FarmPower</span>
+      </a>
+
+      <!-- Main Navigation -->
+      <ul class="hidden md:flex items-center space-x-8">
+        <li>
+          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Equipment Market
+          </a>
+        </li>
+        <li>
+          <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Parts Market
+          </a>
+        </li>
+        <li>
+          <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Service
+          </a>
+        </li>
+        <li>
+          <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            GPS Tracking
+          </a>
+        </li>
+        <li>
+          <a href="crop-calculator.html" class="text-foreground/80 hover:text-foreground transition-colors">
+            Crop Calculator
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="notifications.html" class="relative p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="notificationCount" class="absolute top-0 right-0 h-5 w-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">0</span>
+        </a>
+
+        <!-- User Dropdown (when logged in) -->
+        <div id="userMenu" class="relative hidden">
+          <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-secondary rounded-lg p-2">
+            <img id="userAvatar" src="assets/images/avatar-placeholder.png" alt="User Avatar" class="h-8 w-8 rounded-full">
+            <span id="userName" class="text-sm font-medium">User Name</span>
+          </button>
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
+            <a href="profile.html" class="block px-4 py-2 text-sm hover:bg-secondary">Profile</a>
+            <a href="my-equipment.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Equipment</a>
+            <a href="my-services.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Services</a>
+            <a href="settings.html" class="block px-4 py-2 text-sm hover:bg-secondary">Settings</a>
+            <hr class="my-1 border-border">
+            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-secondary">
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth Buttons (when logged out) -->
+        <div id="authButtons" class="flex items-center space-x-4">
+          <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
+          <a href="register.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            Register
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="md:hidden fixed inset-y-0 right-0 w-full max-w-sm bg-background border-l border-border transform translate-x-full transition-transform duration-200 ease-in-out">
+    <div class="flex flex-col h-full">
+      <div class="flex items-center justify-between p-4 border-b border-border">
+        <span class="text-lg font-bold">Menu</span>
+        <button onclick="toggleMobileMenu()" class="p-2 hover:bg-secondary rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-4">
+        <ul class="space-y-4">
+          <li>
+            <a href="shop.html" class="block text-lg hover:text-primary">Equipment Market</a>
+          </li>
+          <li>
+            <a href="parts-marketplace.html" class="block text-lg hover:text-primary">Parts Market</a>
+          </li>
+          <li>
+            <a href="service-scheduling.html" class="block text-lg hover:text-primary">Service</a>
+          </li>
+          <li>
+            <a href="gps-tracking.html" class="block text-lg hover:text-primary">GPS Tracking</a>
+          </li>
+          <li>
+            <a href="crop-calculator.html" class="block text-lg hover:text-primary">Crop Calculator</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Toggle mobile menu
+  function toggleMobileMenu() {
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenu.classList.toggle('translate-x-full');
+  }
+
+  // Toggle user dropdown
+  function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    const userMenu = document.getElementById('userMenu');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    if (userMenu && !userMenu.contains(e.target)) {
+      if(userDropdown) userDropdown.classList.add('hidden');
+    }
+  });
+
+  // Handle authentication state
+  function updateAuthState(isLoggedIn, userData = null) {
+    const userMenu = document.getElementById('userMenu');
+    const authButtons = document.getElementById('authButtons');
+    const notificationCount = document.getElementById('notificationCount');
+    
+    if (isLoggedIn && userData) {
+      userMenu.classList.remove('hidden');
+      authButtons.classList.add('hidden');
+      document.getElementById('userAvatar').src = userData.avatar_url || 'assets/images/avatar-placeholder.png';
+      document.getElementById('userName').textContent = userData.name;
+      const notifications = userData.notifications || 0;
+      notificationCount.textContent = notifications > 9 ? '9+' : notifications.toString();
+      if (notifications > 0) {
+        notificationCount.classList.remove('hidden');
+      } else {
+        notificationCount.classList.add('hidden');
+      }
+    } else {
+      userMenu.classList.add('hidden');
+      authButtons.classList.remove('hidden');
+      notificationCount.textContent = '0';
+      notificationCount.classList.add('hidden');
+    }
+  }
+
+  function logout() {
+    console.log('Logging out...');
+    updateAuthState(false);
+  }
+
+
+
+
+</script>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="relative bg-gradient-to-b from-primary/5 to-background">
+      <div class="container mx-auto px-4 md:px-6 py-20 md:py-32">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div class="space-y-6">
+            <h1 class="text-4xl md:text-6xl font-bold tracking-tighter">
+              Transform Your Farming with Smart Technology
+            </h1>
+            <p class="text-xl text-muted-foreground">
+              Manage equipment, track GPS locations, schedule services, and optimize crop profitability - all in one platform.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a href="./shop.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-lg font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+                Get Started
+              </a>
+              <a href="./contact.html" class="inline-flex items-center justify-center rounded-lg border border-border px-6 py-3 text-lg font-medium hover:bg-secondary">
+                Contact Sales
+              </a>
+            </div>
+          </div>
+          <div class="relative">
+            <img src="https://images.unsplash.com/photo-1653380166183-05c43839dfa3?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Smart Farming" class="rounded-lg shadow-2xl">
+            <div class="absolute -bottom-6 -right-6 bg-background p-6 rounded-lg shadow-xl">
+              <div class="flex items-center space-x-4">
+                <div class="flex -space-x-4">
+                  <img src="https://images.unsplash.com/photo-1680033786474-58d0a84e2d5f?q=80&w=3132&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="User" class="h-10 w-10 rounded-full border-2 border-background">
+                  <img src="https://images.unsplash.com/photo-1612259477141-57576a64a9cd?q=80&w=3093&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="User" class="h-10 w-10 rounded-full border-2 border-background">
+                  <img src="https://images.unsplash.com/photo-1603062393313-86070a37d115?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="User" class="h-10 w-10 rounded-full border-2 border-background">
+                </div>
+                <div>
+                  <p class="font-medium">Join 10,000+ farmers</p>
+                  <p class="text-sm text-muted-foreground">who trust FarmPower</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20">
+      <div class="container mx-auto px-4 md:px-6">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold mb-4">Everything You Need to Manage Your Farm</h2>
+          <p class="text-muted-foreground max-w-2xl mx-auto">
+            From equipment tracking to crop planning, we provide all the tools you need to run your farm efficiently.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- Equipment Marketplace -->
+          <a href="./shop.html" class="group relative overflow-hidden rounded-lg border border-border bg-background p-6 hover:shadow-lg transition-all">
+            <div class="flex items-center space-x-4">
+              <div class="p-3 rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3h18v18H3z"></path>
+                  <path d="M21 12H3"></path>
+                  <path d="M12 3v18"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold">Equipment Marketplace</h3>
+            </div>
+            <p class="mt-4 text-muted-foreground">Buy, sell, or rent farming equipment with our secure marketplace platform.</p>
+          </a>
+
+          <!-- GPS Tracking -->
+          <a href="./gps-tracking.html" class="group relative overflow-hidden rounded-lg border border-border bg-background p-6 hover:shadow-lg transition-all">
+            <div class="flex items-center space-x-4">
+              <div class="p-3 rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 2v10l4.5 4.5"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold">GPS Tracking</h3>
+            </div>
+            <p class="mt-4 text-muted-foreground">Real-time GPS tracking and field planning for your equipment fleet.</p>
+          </a>
+
+          <!-- Service Scheduling -->
+          <a href="./service-scheduling.html" class="group relative overflow-hidden rounded-lg border border-border bg-background p-6 hover:shadow-lg transition-all">
+            <div class="flex items-center space-x-4">
+              <div class="p-3 rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold">Service Scheduling</h3>
+            </div>
+            <p class="mt-4 text-muted-foreground">Schedule maintenance and repairs for your equipment with certified technicians.</p>
+          </a>
+
+          <!-- Parts Market -->
+          <a href="./parts-marketplace.html" class="group relative overflow-hidden rounded-lg border border-border bg-background p-6 hover:shadow-lg transition-all">
+            <div class="flex items-center space-x-4">
+              <div class="p-3 rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold">Parts Market</h3>
+            </div>
+            <p class="mt-4 text-muted-foreground">Find and purchase genuine parts for your equipment with compatibility checking.</p>
+          </a>
+
+          <!-- Crop Calculator -->
+          <a href="./crop-calculator.html" class="group relative overflow-hidden rounded-lg border border-border bg-background p-6 hover:shadow-lg transition-all">
+            <div class="flex items-center space-x-4">
+              <div class="p-3 rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                  <line x1="12" y1="8" x2="12" y2="16"></line>
+                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold">Crop Calculator</h3>
+            </div>
+            <p class="mt-4 text-muted-foreground">Calculate crop profitability and optimize your farming operations.</p>
+          </a>
+
+          <!-- Notifications -->
+          <a href="./notifications.html" class="group relative overflow-hidden rounded-lg border border-border bg-background p-6 hover:shadow-lg transition-all">
+            <div class="flex items-center space-x-4">
+              <div class="p-3 rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold">Smart Notifications</h3>
+            </div>
+            <p class="mt-4 text-muted-foreground">Stay updated with real-time alerts for maintenance, weather, and more.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="bg-primary text-primary-foreground py-20">
+      <div class="container mx-auto px-4 md:px-6">
+        <div class="text-center">
+          <h2 class="text-3xl font-bold mb-4">Ready to Transform Your Farm?</h2>
+          <p class="text-primary-foreground/80 max-w-2xl mx-auto mb-8">
+            Join thousands of farmers who are already using FarmPower to manage their operations more efficiently.
+          </p>
+          <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="./register.html" class="inline-flex items-center justify-center rounded-lg bg-background px-6 py-3 text-lg font-medium text-foreground shadow transition-colors hover:bg-background/90">
+              Get Started
+            </a>
+            <a href="./contact.html" class="inline-flex items-center justify-center rounded-lg border border-primary-foreground px-6 py-3 text-lg font-medium text-primary-foreground hover:bg-primary-foreground/10">
+              Schedule Demo
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Include Footer -->
+   <!-- Footer -->
+   <footer class="border-t border-border bg-background">
+    <div class="container mx-auto px-4 md:px-6 py-12 md:py-16">
+      <div class="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
+        <div>
+          <h3 class="text-lg font-medium mb-4 text-white">Marketplace</h3>
+          <ul class="space-y-2">
+            <li><a href="marketplace.html" class="text-muted-foreground hover:text-white transition-colors">Browse Equipment</a></li>
+            <li><a href="marketplace.html" class="text-muted-foreground hover:text-white transition-colors">Rent Equipment</a></li>
+            <li><a href="marketplace.html" class="text-muted-foreground hover:text-white transition-colors">Sell Equipment</a></li>
+            <li><a href="marketplace.html" class="text-muted-foreground hover:text-white transition-colors">Featured Deals</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-4 text-white">Smart Services</h3>
+          <ul class="space-y-2">
+            <li><a href="tracking.html" class="text-muted-foreground hover:text-white transition-colors">GPS Tracking</a></li>
+            <li><a href="mapping.html" class="text-muted-foreground hover:text-white transition-colors">Land Mapping</a></li>
+            <li><a href="analytics.html" class="text-muted-foreground hover:text-white transition-colors">Analytics</a></li>
+            <li><a href="maintenance.html" class="text-muted-foreground hover:text-white transition-colors">Maintenance</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-4 text-white">Company</h3>
+          <ul class="space-y-2">
+            <li><a href="about.html" class="text-muted-foreground hover:text-white transition-colors">About Us</a></li>
+            <li><a href="contact.html" class="text-muted-foreground hover:text-white transition-colors">Contact</a></li>
+            <li><a href="blog.html" class="text-muted-foreground hover:text-white transition-colors">Blog</a></li>
+            <li><a href="careers.html" class="text-muted-foreground hover:text-white transition-colors">Careers</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-4 text-white">Support</h3>
+          <ul class="space-y-2">
+            <li><a href="help.html" class="text-muted-foreground hover:text-white transition-colors">Help Center</a></li>
+            <li><a href="documentation.html" class="text-muted-foreground hover:text-white transition-colors">Documentation</a></li>
+            <li><a href="api.html" class="text-muted-foreground hover:text-white transition-colors">API Access</a></li>
+            <li><a href="status.html" class="text-muted-foreground hover:text-white transition-colors">System Status</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center">
+        <p class="text-sm text-muted-foreground">
+          &copy; 2024 FarmPower. All rights reserved.
+        </p>
+        
+        <div class="flex space-x-4 mt-4 md:mt-0">
+          <a href="#" class="btn-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+            </svg>
+          </a>
+          <a href="#" class="btn-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a href="#" class="btn-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
+            </svg>
+          </a>
+          <a href="#" class="btn-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+              <rect x="2" y="9" width="4" height="12"></rect>
+              <circle cx="4" cy="4" r="2"></circle>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <script>
+    // Initialize Socket.io connection
+    const socket = io('http://localhost:3000');
+
+    // Real-time updates
+    socket.on('stats-update', (data) => {
+      // Update user count or other real-time stats
+    });
+
+    // AI Chatbot Logic
+    const chatIcon = document.getElementById('chatIcon');
+    const chatWindow = document.getElementById('chatWindow');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    const closeChatBtn = document.getElementById('closeChatBtn');
+
+    console.log('ChatIcon element:', chatIcon);
+    console.log('ChatWindow element:', chatWindow);
+
+    chatIcon.addEventListener('click', () => {
+      console.log('Chat icon clicked!');
+      chatWindow.classList.toggle('hidden');
+    });
+
+    closeChatBtn.addEventListener('click', () => {
+      chatWindow.classList.add('hidden');
+    });
+
+    sendChatBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    function addMessage(sender, message) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('chat-bubble', sender, 'rounded-lg', 'p-3', 'max-w-[70%]', 'mb-2', 'shadow-md');
+      messageElement.textContent = message;
+      chatMessages.appendChild(messageElement);
+      chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+    }
+
+    async function sendMessage() {
+      const userMessage = chatInput.value.trim();
+      if (userMessage === '') return;
+
+      addMessage('user', userMessage);
+      chatInput.value = '';
+
+      // Simulate AI response
+      const aiResponse = await getAiResponse(userMessage);
+      addMessage('ai', aiResponse);
+    }
+
+    async function getAiResponse(query) {
+      // In a real application, you would send this query to your backend AI API
+      // Example: const response = await fetch('/api/ai-search', { method: 'POST', body: JSON.stringify({ query }) });
+      // const data = await response.json();
+      // return data.answer;
+
+      // Simulated responses for demonstration
+      if (query.toLowerCase().includes('farming')) {
+        return "Farming is the practice of cultivating land, raising crops, and rearing animals to provide food and other products. Modern farming increasingly uses technology like GPS for precision agriculture.";
+      } else if (query.toLowerCase().includes('tractor')) {
+        return "Tractors are essential farm vehicles used for plowing, tilling, planting, and other agricultural tasks. They come in various sizes and types depending on the farming needs.";
+      } else if (query.toLowerCase().includes('crops')) {
+        return "Crops are cultivated plants that are harvested for food, fiber, or other uses. Common crops include corn, wheat, soybeans, and rice. Crop yield can be improved through optimized planting, fertilization, and pest control.";
+      } else if (query.toLowerCase().includes('gps')) {
+        return "GPS (Global Positioning System) in farming enables precision agriculture by providing accurate location data for tasks like guided tractor operation, field mapping, and variable rate application of fertilizers.";
+      } else if (query.toLowerCase().includes('land mapping')) {
+        return "Land mapping in agriculture involves creating detailed maps of fields using satellite imagery, drones, or GPS. This helps in understanding soil variations, water drainage, and planning efficient planting and harvesting strategies.";
+      } else if (query.toLowerCase().includes('crop yield')) {
+        return "Improving crop yield involves various strategies such as selecting the right crop varieties, optimizing soil health, precise irrigation, integrated pest management, and using modern machinery.";
+      } else if (query.toLowerCase().includes('green agriculture') || query.toLowerCase().includes('sustainable farming')) {
+        return "Green agriculture, or sustainable farming, focuses on environmentally friendly practices that conserve natural resources, reduce pollution, and promote ecological balance while maintaining productivity. This includes organic farming, conservation tillage, and efficient water use.";
+      }
+      else {
+        return "I am an AI assistant focused on farming and agriculture. Please ask me questions about farming, tractors, crops, GPS, land mapping, or improving crop yield!";
+      }
+    }
+  </script>
+
+<!-- AI Chatbot Icon -->
+<div id="chatIcon" class="fixed bottom-6 right-6 bg-primary text-primary-foreground rounded-full p-4 shadow-lg cursor-pointer hover:bg-primary/90 transition-colors z-[100]">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+  </svg>
+</div>
+
+<!-- AI Chatbot Window -->
+<div id="chatWindow" class="hidden fixed bottom-20 right-6 w-80 h-[400px] bg-background border border-border rounded-lg shadow-xl flex flex-col z-[100]">
+  <div class="flex justify-between items-center border-b border-border p-4 bg-secondary rounded-t-lg">
+    <h3 class="text-lg font-bold">FarmPower AI Assistant</h3>
+    <button id="closeChatBtn" class="text-muted-foreground hover:text-foreground">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+  <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
+    <!-- Chat messages will be appended here -->
+    <div class="chat-bubble ai rounded-lg p-3 max-w-[70%] mb-2 shadow-md">Hello! I am your FarmPower AI assistant. How can I help you with farming today?</div>
+  </div>
+  <div class="border-t border-border p-4 flex">
+    <input type="text" id="chatInput" placeholder="Ask me about farming..." class="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary text-sm">
+    <button id="sendChatBtn" class="ml-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+      Send
+    </button>
+  </div>
+</div>
+</body>
+</html>

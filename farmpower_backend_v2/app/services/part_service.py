@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_ # For JSON array contains-like operations if needed
+from sqlalchemy import or_, func # For JSON array contains-like operations if needed
 from typing import List, Optional
 
 from ..models.part import Part as PartModel
-from ..schemas.part import PartCreate, PartUpdate
+from ..schemas.part import PartCreate, PartUpdate, PartSchema
+from ..schemas.user import UserSchema
 
 class PartService:
     def get_part_by_id(self, db: Session, part_id: int) -> Optional[PartModel]:
@@ -26,35 +27,27 @@ class PartService:
 
         if category:
             query = query.filter(PartModel.category.ilike(f"%{category}%"))
+        if tractor_brand:
+            # Search within the JSON array for a case-insensitive match
+            # This requires a PostgreSQL specific operator '?' for jsonb, or a text search approach
+            # For simpler implementations, consider direct string search or a more normalized DB design
+            # For now, a simple 'like' on string representation of JSON might work for basic cases
+            query = query.filter(func.lower(PartModel.tractor_brand_compatibility.astext).like(f'%"{tractor_brand.lower()}"%'))
         if condition:
-            query = query.filter(PartModel.condition == condition)
-        if min_price is not None:
+            query = query.filter(PartModel.condition.ilike(f"%{condition}%"))
+        if min_price:
             query = query.filter(PartModel.price >= min_price)
-        if max_price is not None:
+        if max_price:
             query = query.filter(PartModel.price <= max_price)
         if location:
             query = query.filter(PartModel.location.ilike(f"%{location}%"))
-        if seller_id is not None:
+        if seller_id:
             query = query.filter(PartModel.seller_id == seller_id)
-
-        # Filtering by tractor_brand in a JSON list:
-        # This is a simplified example. For robust JSON querying, database-specific functions
-        # like PostgreSQL's JSONB operators (@>, ?, ?&, ?|) are more powerful.
-        # SQLAlchemy can express some of these, e.g., using .contains() for simple array membership
-        # or custom SQL constructs.
-        if tractor_brand:
-            # Simple string matching if tractor_brand_compatibility was a simple string.
-            # For JSON array, this requires a more specific approach.
-            # Example for PostgreSQL JSONB: query = query.filter(PartModel.tractor_brand_compatibility.op('@>')([tractor_brand]))
-            # For a generic approach that might work on simple JSON text in SQLite/MySQL (less efficient):
-            query = query.filter(PartModel.tractor_brand_compatibility.astext.ilike(f'%"{tractor_brand}"%'))
-
 
         return query.order_by(PartModel.created_at.desc()).offset(skip).limit(limit).all()
 
     def create_part(self, db: Session, part_in: PartCreate, seller_id: int) -> PartModel:
-        part_data = part_in.model_dump()
-        db_part = PartModel(**part_data, seller_id=seller_id)
+        db_part = PartModel(**part_in.model_dump(), seller_id=seller_id)
         db.add(db_part)
         db.commit()
         db.refresh(db_part)
@@ -62,9 +55,9 @@ class PartService:
 
     def update_part(self, db: Session, db_part: PartModel, part_in: PartUpdate) -> PartModel:
         update_data = part_in.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(db_part, field, value)
-        db.add(db_part) # Mark as dirty
+        for key, value in update_data.items():
+            setattr(db_part, key, value)
+        db.add(db_part)
         db.commit()
         db.refresh(db_part)
         return db_part

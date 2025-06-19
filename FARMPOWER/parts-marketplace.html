@@ -26,7 +26,7 @@
       <!-- Main Navigation -->
       <ul class="hidden md:flex items-center space-x-8">
         <li>
-          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+          <a href="marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
             Equipment Market
           </a>
         </li>
@@ -639,5 +639,24 @@
     }
   });
 </script> 
+  <script>
+// Dummy parts listings
+const dummyParts=[
+  {id:1,name:'Oil Filter',price:25,description:'Premium engine oil filter compatible with most tractors.',image_url:'https://source.unsplash.com/600x400?filter'},
+  {id:2,name:'Hydraulic Pump',price:450,description:'High-flow pump for hydraulic systems.',image_url:'https://source.unsplash.com/600x400?pump'},
+  {id:3,name:'Tractor Seat',price:120,description:'Comfortable replacement seat with suspension.',image_url:'https://source.unsplash.com/600x400?seat'}
+];
+function renderPart(p){return `<div class="card-hover bg-dark-200 rounded-lg overflow-hidden">
+  <img src="${p.image_url}" alt="${p.name}" class="w-full h-48 object-cover">
+  <div class="p-4">
+    <h3 class="text-lg font-semibold mb-2">${p.name}</h3>
+    <p class="text-gray-400 mb-4">${p.description}</p>
+    <span class="text-xl font-bold">$${p.price}</span>
+  </div>
+</div>`;}
+function populateParts(){const grid=document.getElementById('partsGrid');if(grid){grid.innerHTML=dummyParts.map(renderPart).join('');}}
+document.addEventListener('DOMContentLoaded',populateParts);
+</script>
+<script src="assets/js/floatingChatbot.js"></script>
 </body>
 </html> 
