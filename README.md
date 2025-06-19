@@ -9,7 +9,7 @@ FarmPower is a comprehensive digital solution designed to enhance farming operat
 - Data-driven insights for better decision-making
 - Robust marketplaces for agricultural equipment and parts
 - Seamless communication between users and service providers
-- AI-powered assistance for farming-related queries
+- AI-powered assistance for farming-related queries using Google's Generative AI
 
 ## Project Structure
 

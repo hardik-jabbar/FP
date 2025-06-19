@@ -125,6 +125,13 @@
   document.body.appendChild(chatBtn);
   document.body.appendChild(modalOverlay);
 
+  // Session management
+  let sessionId = localStorage.getItem('farmpower_chat_session_id');
+  if (!sessionId) {
+    sessionId = 'temp-' + Date.now();
+    localStorage.setItem('farmpower_chat_session_id', sessionId);
+  }
+
   // Functions
   function appendMessage(sender, message) {
     const msgDiv = el('div', { 
@@ -141,7 +148,13 @@
         : 'bg-muted text-foreground rounded-tl-sm'
     ].join(' ');
     
-    msgDiv.innerHTML = `<div class="${messageClasses}">${message}</div>`;
+    // Convert markdown links to HTML
+    const processedMessage = message.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g, 
+      '<a href="$2" target="_blank" class="text-primary underline hover:text-primary/80">$1</a>'
+    );
+    
+    msgDiv.innerHTML = `<div class="${messageClasses}">${processedMessage}</div>`;
     chatWindow.appendChild(msgDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
@@ -170,7 +183,10 @@
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
+        body: JSON.stringify({ 
+          query,
+          sessionId: sessionId
+        })
       });
       
       // Remove typing indicator
@@ -178,6 +194,11 @@
       
       if (response.ok) {
         const data = await response.json();
+        // Update session ID if a new one was generated
+        if (data.sessionId && data.sessionId !== sessionId) {
+          sessionId = data.sessionId;
+          localStorage.setItem('farmpower_chat_session_id', sessionId);
+        }
         appendMessage('ai', data.response);
       } else {
         const error = await response.json().catch(() => ({}));
