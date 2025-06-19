@@ -49,15 +49,36 @@
   const chatWindow = el('div', { 
     id: 'chat-window-modal', 
     class: 'flex-1 p-4 overflow-y-auto space-y-4',
+    style: 'min-height: 0; display: flex; flex-direction: column;'
+  });
+  
+  // Main chat container
+  const chatWindowMain = el('div', {
+    id: 'chat-window-main',
+    class: 'flex-1 overflow-y-auto space-y-4 mb-4',
     style: 'min-height: 0;' // Allows flex item to shrink below content size
   });
-  chatWindow.innerHTML = '<div class="flex justify-start"><div class="bg-muted text-muted-foreground p-3 rounded-lg max-w-[70%]">Hello! I am your AI Farming Assistant. How can I help you today?</div></div>';
+  // Initial welcome message
+  chatWindowMain.innerHTML = '<div class="flex justify-start"><div class="bg-muted text-muted-foreground p-3 rounded-lg max-w-[90%] md:max-w-[70%]">Hello! I am your AI Farming Assistant. How can I help you today?</div></div>';
+  chatWindow.appendChild(chatWindowMain);
   modal.appendChild(chatWindow);
 
   // Input area
-  const inputBar = el('div', { class: 'border-t border-border p-4 flex items-center space-x-4' });
-  const userInput = el('input', { type: 'text', id: 'user-input', class: 'flex-1 p-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary', placeholder: 'Type your message...' });
-  const sendBtn = el('button', { id: 'send-button', class: 'inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90' }, 'Send');
+  const inputBar = el('div', { 
+    class: 'border-t border-border p-3 flex items-center gap-2 flex-shrink-0',
+    style: 'min-height: 72px;' // Ensure input bar has minimum height
+  });
+  const userInput = el('input', { 
+    type: 'text', 
+    id: 'user-input', 
+    class: 'flex-1 p-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm md:text-base', 
+    placeholder: 'Type your message...' 
+  });
+  const sendBtn = el('button', { 
+    id: 'send-button', 
+    class: 'h-full px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0',
+    'aria-label': 'Send message'
+  }, 'Send');
   sendBtn.textContent = 'Send';
   inputBar.appendChild(userInput);
   inputBar.appendChild(sendBtn);
@@ -69,10 +90,21 @@
 
   // Functions
   function appendMessage(sender, message) {
-    const msgDiv = el('div', { class: 'flex ' + (sender === 'user' ? 'justify-end' : 'justify-start') });
-    msgDiv.innerHTML = `<div class="${sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'} p-3 rounded-lg max-w-[70%]">${message}</div>`;
-    chatWindow.appendChild(msgDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    const msgDiv = el('div', { 
+      class: 'flex ' + (sender === 'user' ? 'justify-end' : 'justify-start') 
+    });
+    const messageClasses = [
+      'p-3 rounded-lg',
+      'break-words',
+      'max-w-[90%] md:max-w-[70%]',
+      sender === 'user' 
+        ? 'bg-primary text-primary-foreground' 
+        : 'bg-muted text-muted-foreground'
+    ].join(' ');
+    
+    msgDiv.innerHTML = `<div class="${messageClasses}">${message}</div>`;
+    chatWindowMain.appendChild(msgDiv);
+    chatWindowMain.scrollTop = chatWindowMain.scrollHeight;
   }
 
   async function sendMessage() {
