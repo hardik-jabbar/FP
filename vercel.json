@@ -2,11 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "FARMPOWER/package.json",
+      "src": "FARMPOWER/server.js",
       "use": "@vercel/node"
     },
     {
-      "src": "FARMPOWER/public/**",
+      "src": "FARMPOWER/**/*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "FARMPOWER/assets/**",
       "use": "@vercel/static"
     },
     {

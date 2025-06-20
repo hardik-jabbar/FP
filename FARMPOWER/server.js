@@ -48,10 +48,27 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://*.vercel.app',
+  'https://farmpower.vercel.app',  // Update this with your Vercel URL
+  'https://www.farmpower.app'      // Your custom domain if you have one
+];
+
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-vercel-app.vercel.app', 'https://www.yourdomain.com']
-    : '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (process.env.NODE_ENV === 'development' || 
+        allowedOrigins.some(allowedOrigin => origin === allowedOrigin || origin.endsWith('.vercel.app'))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
@@ -166,7 +183,18 @@ app.use('/api', apiRouter);
 
 // Serve SPA (Single Page Application)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  // If the request is for an API route, skip SPA serving
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  // For all other routes, serve index.html
+  res.sendFile(path.join(__dirname, 'index.html'), (err) => {
+    if (err) {
+      console.error('Error sending file:', err);
+      res.status(500).send('Error loading the application');
+    }
+  });
 });
 
 // Error handling middleware
@@ -183,8 +211,9 @@ module.exports = app;
 
 // Only start the server if this file is run directly (not when imported as a module)
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  server.listen(PORT, () => {
+  const PORT = process.env.PORT || 3001;
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+    console.log(`Visit http://localhost:${PORT}`);
   });
 } 
