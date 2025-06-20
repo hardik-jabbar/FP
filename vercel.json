@@ -15,6 +15,18 @@
     {
       "src": "FARMPOWER/api/**/*.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "FARMPOWER/scripts/**/*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "FARMPOWER/assets/**/*",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "FARMPOWER/**/*.{html,css,js,json,svg,png,jpg,jpeg,gif,ico}",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -27,8 +39,41 @@
       "dest": "/FARMPOWER/assets/$1"
     },
     {
+      "src": "/scripts/(.*)",
+      "dest": "/FARMPOWER/scripts/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/FARMPOWER/server.js"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/FARMPOWER/(.*).js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ]
+    },
+    {
+      "source": "/FARMPOWER/(.*).css",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css"
+        }
+      ]
+    },
+    {
+      "source": "/FARMPOWER/(.*).(jpg|jpeg|png|gif|svg|ico)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "image/$1"
+        }
+      ]
     }
   ]
 }

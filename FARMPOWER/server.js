@@ -32,12 +32,50 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Security middleware
-app.use(helmet());
-app.use(helmet.xssFilter());
-app.use(helmet.noSniff());
-app.use(helmet.hidePoweredBy());
-app.use(helmet.frameguard({ action: 'deny' }));
+// Security middleware with CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        "https://cdn.tailwindcss.com",
+        "https://cdn.auth0.com",
+        "https://vercel.live"
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "https://images.unsplash.com",
+        "https://*.vercel.app"
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com"
+      ],
+      connectSrc: [
+        "'self'",
+        "https://*.auth0.com",
+        "https://*.vercel.app"
+      ],
+      frameSrc: [
+        "'self'",
+        "https://*.auth0.com"
+      ]
+    }
+  },
+  xssFilter: true,
+  noSniff: true,
+  hidePoweredBy: true,
+  frameguard: { action: 'deny' }
+}));
 
 // Performance and logging
 app.use(compression());
@@ -85,15 +123,22 @@ const staticOptions = {
   }
 };
 
-// Serve static files from the root directory with proper caching
+// Serve static files from the root directory with proper caching and MIME types
 app.use(express.static(__dirname, {
   ...staticOptions,
   setHeaders: (res, path) => {
-    // Set proper cache headers for different file types
+    // Set proper content-type headers for different file types
     if (path.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
     } else if (path.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html');
+    } else if (path.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json');
+    } else if (path.match(/\.(jpg|jpeg|png|gif|svg)$/)) {
+      const ext = path.split('.').pop();
+      res.setHeader('Content-Type', `image/${ext === 'jpg' ? 'jpeg' : ext}`);
     }
   }
 }));
