@@ -2,34 +2,23 @@
   "version": 2,
   "builds": [
     {
+      "src": "FARMPOWER/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "FARMPOWER"
+      }
+    },
+    {
+      "src": "FARMPOWER/api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "FARMPOWER/server.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "FARMPOWER/**/*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "FARMPOWER/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "FARMPOWER/**/*",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/FARMPOWER/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/FARMPOWER/server.js"
-    }
-  ],
-  "rewrites": [
-    { "source": "/assets/(.*)", "destination": "/FARMPOWER/assets/$1" },
-    { "source": "/(.*)", "destination": "/FARMPOWER/server.js" }
+    { "src": "/api/(.*)", "dest": "/api" },
+    { "src": "/(.*)", "dest": "/FARMPOWER/$1" }
   ]
 }

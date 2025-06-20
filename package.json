@@ -1,0 +1,14 @@
+{
+  "name": "farmpower-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd FARMPOWER && npm run dev",
+    "build": "cd FARMPOWER && npm run build",
+    "start": "cd FARMPOWER && npm start"
+  },
+  "engines": {
+    "node": ">=14.x"
+  },
+  "dependencies": {}
+}
