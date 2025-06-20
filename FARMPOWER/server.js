@@ -101,8 +101,19 @@ app.get('*.html', (req, res, next) => {
   });
 });
 
-// Serve other static files (CSS, JS, images, etc.)
-app.use(express.static(path.join(__dirname)));
+// Serve index.html for all other routes (SPA routing)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(500).json({
+    error: 'Something went wrong!',
+    ...(process.env.NODE_ENV === 'development' && { details: err.message })
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
