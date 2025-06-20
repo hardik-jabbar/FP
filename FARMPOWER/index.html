@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-dark text-light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -270,8 +270,24 @@
       background: #525252;
     }
   </style>
+  
+  <!-- Common CSS -->
+  <link rel="stylesheet" href="assets/css/marketplace.css">
+  
+  <!-- Common Scripts -->
+  <script src="scripts/api.js" defer></script>
+  <script src="scripts/cart.js" defer></script>
+  <script src="scripts/common.js" defer></script>
 </head>
-<body class="bg-background text-foreground">    <script src="assets/js/floatingChatbot.js"></script>
+<body class="min-h-screen flex flex-col bg-background text-foreground">
+  <!-- Header will be loaded here -->
+  <div id="header"></div>
+  
+  <main class="flex-grow">    <script src="assets/js/floatingChatbot.js"></script>
+  </main>
+  
+  <!-- Footer will be loaded here -->
+  <div id="footer"></div>
 </body>
                             
 

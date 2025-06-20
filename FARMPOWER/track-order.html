@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-dark text-light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -174,8 +174,20 @@
       background-color: #10b981;
     }
   </style>
+  
+  <!-- Common CSS -->
+  <link rel="stylesheet" href="assets/css/marketplace.css">
+  
+  <!-- Common Scripts -->
+  <script src="scripts/api.js" defer></script>
+  <script src="scripts/cart.js" defer></script>
+  <script src="scripts/common.js" defer></script>
 </head>
-<body class="bg-background text-foreground">
+<body class="min-h-screen flex flex-col bg-background text-foreground">
+  <!-- Header will be loaded here -->
+  <div id="header"></div>
+  
+  <main class="flex-grow">
 <!-- Navigation Header -->
 <header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
   <div class="container mx-auto px-4 md:px-6">
@@ -931,5 +943,9 @@
     }
   </script>
   <script src="assets/js/floatingChatbot.js"></script>
+  </main>
+  
+  <!-- Footer will be loaded here -->
+  <div id="footer"></div>
 </body>
 </html>

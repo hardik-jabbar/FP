@@ -1,54 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="marketplace-body">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tractor & Parts Marketplace - FarmPower</title>
-  <meta name="description" content="Find tractors, parts, and accessories on FarmPower's secure marketplace">
+  <title>Farm Equipment Marketplace - FarmPower</title>
+  <meta name="description" content="Find new and used farm equipment, tractors, and parts on FarmPower's secure marketplace">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="assets/css/marketplace.css">
   <script src="scripts/api.js"></script>
   <script src="scripts/cart.js"></script>
+  <!-- Preload critical resources -->
+  <link rel="preload" href="assets/css/marketplace.css" as="style">
+  <link rel="preload" href="scripts/api.js" as="script">
+  <link rel="preload" href="scripts/cart.js" as="script">
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            primary: '#4CAF50',
-            'primary-foreground': '#FFFFFF',
-            dark: '#1A1A1A',
-            'dark-200': '#2D2D2D',
-            'dark-300': '#3D3D3D',
-            'dark-400': '#4D4D4D',
+            primary: 'var(--primary)',
+            'primary-dark': 'var(--primary-dark)',
+            'primary-light': 'var(--primary-light)',
+            dark: 'var(--dark)',
+            'dark-200': 'var(--dark-200)',
+            'dark-300': 'var(--dark-300)',
+            'dark-400': 'var(--dark-400)',
+            light: 'var(--light)',
+            'light-200': 'var(--light-200)',
+            'light-300': 'var(--light-300)',
+            border: 'var(--border)',
+            success: 'var(--success)',
+            warning: 'var(--warning)',
+            error: 'var(--error)',
+            info: 'var(--info)'
           }
         }
       }
     }
   </script>
   <style>
-    /* Custom CSS */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    /* Critical CSS for above-the-fold content */
+    .marketplace-hero {
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                  url('assets/images/marketplace-hero.jpg') center/cover no-repeat;
     }
     
-    body {
-      font-family: 'Inter', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      background-color: #1A1A1A;
-      color: #FFFFFF;
+    .loading-spinner {
+      border: 3px solid var(--dark-300);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
     }
     
-    .card-hover {
-      transition: all 0.3s;
-    }
-    
-    .card-hover:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
     
     .nav-link {
@@ -141,43 +151,143 @@
       background: #9CA3AF;
     }
   </style>
+  </style>
 </head>
-<body>
+<body class="bg-dark text-light">
 <!-- Header -->
-<div id="header"></div>
+<!-- Header will be loaded here -->
+  <div id="header"></div>
 
-<main>
-  <!-- Featured Listings -->
-  <section class="py-16 bg-dark">
+<main class="min-h-screen">
+  <!-- Hero Section -->
+  <section class="marketplace-hero py-20 md:py-32 text-center text-white">
     <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold mb-12 text-center text-white">Featured Listings</h2>
-      <div id="featuredListings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Featured items will be dynamically loaded here -->
-        <div class="text-center col-span-full">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p class="mt-4">Loading featured listings...</p>
+      <h1 class="text-4xl md:text-6xl font-bold mb-6">Farm Equipment Marketplace</h1>
+      <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">Find the perfect equipment for your farm from our trusted network of sellers</p>
+      
+      <!-- Search Bar -->
+      <div class="max-w-2xl mx-auto bg-white rounded-lg overflow-hidden shadow-lg">
+        <div class="flex">
+          <input type="text" placeholder="Search for tractors, implements, parts..." 
+                class="flex-grow px-6 py-4 text-gray-800 focus:outline-none">
+          <button class="bg-primary hover:bg-primary-dark text-white px-8 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- All Tractors Listing -->
+  <!-- Categories -->
   <section class="py-16 bg-dark-200">
     <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold mb-12 text-center text-white">All Tractors</h2>
-      <div id="tractorsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- All tractors will be dynamically loaded here -->
-        <div class="text-center col-span-full">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p class="mt-4">Loading all tractors...</p>
+      <h2 class="text-3xl font-bold mb-12 text-center">Shop by Category</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <a href="tractors.html" class="category-card group">
+          <div class="bg-dark-300 rounded-xl p-6 text-center transition-all hover:bg-primary hover:shadow-lg">
+            <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-white/20">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </div>
+            <h3 class="font-semibold text-lg group-hover:text-white">Tractors</h3>
+          </div>
+        </a>
+        <!-- Add more category cards here -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Listings -->
+  <section class="py-16 bg-dark">
+    <div class="container mx-auto px-4">
+      <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold">Featured Listings</h2>
+        <a href="tractors.html" class="text-primary hover:underline flex items-center">
+          View All
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </a>
+      </div>
+      
+      <div id="featuredListings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Featured listings will be loaded here -->
+        <div class="col-span-full text-center py-12">
+          <div class="loading-spinner mx-auto"></div>
+          <p class="mt-4 text-gray-400">Loading featured listings...</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- All Listings -->
+  <section class="py-16 bg-dark-200">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+          <h2 class="text-3xl font-bold mb-2">All Equipment</h2>
+          <p class="text-gray-400">Find the perfect equipment for your needs</p>
+        </div>
+        <div class="mt-4 md:mt-0 flex space-x-4">
+          <div class="relative">
+            <select id="sortBy" class="appearance-none bg-dark-300 text-white rounded-lg pl-4 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+              <option value="newest">Newest First</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="year">Year: Newest First</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+              </svg>
+            </div>
+          </div>
+          <button class="bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filters
+          </button>
+        </div>
+      </div>
+      
+      <div id="tractorsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <!-- All tractors will be loaded here -->
+        <div class="col-span-full text-center py-12">
+          <div class="loading-spinner mx-auto"></div>
+          <p class="mt-4 text-gray-400">Loading equipment...</p>
+        </div>
+      </div>
+      
+      <div class="mt-12 flex justify-center">
+        <button id="loadMore" class="bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-8 rounded-lg transition-colors flex items-center">
+          Load More
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+  
+  <!-- CTA Section -->
+  <section class="py-20 bg-primary text-white">
+    <div class="container mx-auto px-4 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold mb-6">Ready to sell your equipment?</h2>
+      <p class="text-xl mb-8 max-w-2xl mx-auto">List your farm equipment for free and reach thousands of potential buyers</p>
+      <button class="bg-white text-primary hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors">
+        List Your Equipment
+      </button>
     </div>
   </section>
 </main>
 
   <!-- Footer -->
-<div id="footer"></div>
+<!-- Footer will be loaded here -->
+  <div id="footer"></div>
 
   <script>
     // Load header and footer

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-dark text-light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -108,8 +108,20 @@
       background: #9CA3AF;
     }
   </style>
+  
+  <!-- Common CSS -->
+  <link rel="stylesheet" href="assets/css/marketplace.css">
+  
+  <!-- Common Scripts -->
+  <script src="scripts/api.js" defer></script>
+  <script src="scripts/cart.js" defer></script>
+  <script src="scripts/common.js" defer></script>
 </head>
-<body class="bg-background text-foreground">
+<body class="min-h-screen flex flex-col bg-background text-foreground">
+  <!-- Header will be loaded here -->
+  <div id="header"></div>
+  
+  <main class="flex-grow">
   <!-- Include Header -->
   <div id="header-placeholder"></div>
 
@@ -582,5 +594,9 @@ document.addEventListener('DOMContentLoaded',()=>{populateGrids(dummyTractors);}
 </script>
 <script type="module" src="assets/js/marketplace.js"></script>
 <script src="assets/js/floatingChatbot.js"></script>
+  </main>
+  
+  <!-- Footer will be loaded here -->
+  <div id="footer"></div>
 </body>
 </html>
