@@ -85,9 +85,34 @@ const staticOptions = {
   }
 };
 
-// Serve static files from the root directory
-app.use(express.static(__dirname, staticOptions));
+// Serve static files from the root directory with proper caching
+app.use(express.static(__dirname, {
+  ...staticOptions,
+  setHeaders: (res, path) => {
+    // Set proper cache headers for different file types
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
+
+// Serve assets from the assets directory
 app.use('/assets', express.static(path.join(__dirname, 'assets'), staticOptions));
+
+// Add a middleware to ensure all asset paths are relative
+app.use((req, res, next) => {
+  if (req.path.endsWith('.css') || req.path.endsWith('.js') || req.path.endsWith('.png') || req.path.endsWith('.jpg') || req.path.endsWith('.jpeg') || req.path.endsWith('.svg') || req.path.endsWith('.gif')) {
+    // Ensure the path is relative to the root
+    const filePath = path.join(__dirname, req.path.startsWith('/') ? req.path.substr(1) : req.path);
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+      return;
+    }
+  }
+  next();
+});
 
 // Serve individual HTML files directly
 app.get('*.html', (req, res, next) => {
