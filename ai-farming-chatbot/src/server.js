@@ -37,8 +37,9 @@ const logger = winston.createLogger({
   ]
 });
 
-// Trust first proxy
-app.set('trust proxy', process.env.TRUST_PROXY || 'loopback');
+// Configure trust proxy
+// In production, you might want to use the actual IP of your reverse proxy
+app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -58,19 +59,30 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests) in development
-    if (!origin && NODE_ENV === 'development') return callback(null, true);
+    if (!origin && NODE_ENV === 'development') {
+      return callback(null, true);
+    }
     
-    if (allowedOrigins.includes(origin) || !origin) {
+    // If no allowed origins, allow all in development
+    if (allowedOrigins.length === 0 && NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // Check if the origin is allowed
+    const isAllowed = !origin || allowedOrigins.includes(origin);
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
       logger.warn(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
 // Apply rate limiting to all API requests

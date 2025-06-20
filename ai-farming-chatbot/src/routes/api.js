@@ -2,6 +2,7 @@ import express from 'express';
 import { getChatGPTResponse } from '../chatbot/chatgpt.js';
 import { v4 as uuidv4 } from 'uuid';
 import winston from 'winston';
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
@@ -26,8 +27,6 @@ const logger = winston.createLogger({
 });
 
 // Rate limiting middleware (applied at the router level)
-const rateLimit = require('express-rate-limit');
-
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs

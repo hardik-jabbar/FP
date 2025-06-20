@@ -188,7 +188,3 @@ export const getChatGPTResponse = async (userId, userQuery) => {
     );
   }
 };
-
-module.exports = {
-  getChatGPTResponse
-};
