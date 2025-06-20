@@ -90,15 +90,19 @@ app.use(express.static(__dirname, staticOptions));
 app.use('/assets', express.static(path.join(__dirname, 'assets'), staticOptions));
 
 // Serve individual HTML files directly
-app.get('*.html', (req, res) => {
+app.get('*.html', (req, res, next) => {
   const filePath = path.join(__dirname, req.path);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    // If the file doesn't exist, serve the main index.html
-    res.sendFile(path.join(__dirname, 'index.html'));
-  }
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (!err) {
+      res.sendFile(filePath);
+    } else {
+      next(); // Forward to the next middleware if file doesn't exist
+    }
+  });
 });
+
+// Serve other static files (CSS, JS, images, etc.)
+app.use(express.static(path.join(__dirname)));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
