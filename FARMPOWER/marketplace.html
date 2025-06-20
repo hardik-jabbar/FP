@@ -212,9 +212,158 @@
     </section>
 
     <!-- Parts Marketplace Header -->
-    <div class="flex justify-between items-center mb-8">
-      <div>
-        <h1 class="text-3xl font-bold">Equipment Marketplace</h1>
+    <div class="container mx-auto px-4 py-8">
+      <h1 class="text-3xl md:text-4xl font-bold mb-6">Farm Equipment Marketplace</h1>
+      
+      <!-- Search and Filter Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Search Input -->
+          <div class="md:col-span-2">
+            <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+            <div class="relative">
+              <input type="text" id="search" data-filter="search" 
+                     class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                     placeholder="Search equipment...">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Category Filter -->
+          <div>
+            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+            <select id="category" data-filter="category" 
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+              <option value="">All Categories</option>
+              <option value="tractors">Tractors</option>
+              <option value="implements">Implements</option>
+              <option value="harvesters">Harvesters</option>
+              <option value="planters">Planters</option>
+              <option value="sprayers">Sprayers</option>
+            </select>
+          </div>
+          
+          <!-- Price Range -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label for="minPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Price</label>
+              <input type="number" id="minPrice" data-filter="minPrice" 
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
+                     placeholder="Min">
+            </div>
+            <div>
+              <label for="maxPrice" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Price</label>
+              <input type="number" id="maxPrice" data-filter="maxPrice" 
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
+                     placeholder="Max">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Advanced Filters Toggle -->
+        <div class="mt-4">
+          <button type="button" id="toggleAdvancedFilters" 
+                  class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 flex items-center">
+            <span>Advanced Filters</span>
+            <svg class="ml-1 w-4 h-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          <!-- Advanced Filters Panel (initially hidden) -->
+          <div id="advancedFilters" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Condition Filter -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Condition</label>
+                <div class="space-y-2">
+                  <label class="flex items-center">
+                    <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" checked>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">New</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" checked>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Used</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" checked>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Refurbished</span>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Brand Filter -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Brand</label>
+                <div class="space-y-2">
+                  <label class="flex items-center">
+                    <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" checked>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">John Deere</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" checked>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Case IH</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" checked>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">New Holland</span>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Year Range -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                      <option>Min Year</option>
+                      <option>2023</option>
+                      <option>2022</option>
+                      <option>2021</option>
+                      <option>2020</option>
+                      <option>2019</option>
+                      <option>2018</option>
+                      <option>2017</option>
+                      <option>2016</option>
+                      <option>2015</option>
+                      <option>Older</option>
+                    </select>
+                  </div>
+                  <div>
+                    <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                      <option>Max Year</option>
+                      <option>2023</option>
+                      <option>2022</option>
+                      <option>2021</option>
+                      <option>2020</option>
+                      <option>2019</option>
+                      <option>2018</option>
+                      <option>2017</option>
+                      <option>2016</option>
+                      <option>2015</option>
+                      <option>Older</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 flex justify-end space-x-3">
+              <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                Reset Filters
+              </button>
+              <button type="button" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
         <p class="text-muted-foreground mt-2">Browse and list farming equipment</p>
       </div>
       
@@ -226,9 +375,46 @@
       </button>
     </div>
 
+    <!-- Results Summary -->
+    <div class="flex justify-between items-center mb-6">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Showing <span id="resultCount" class="font-medium text-gray-900 dark:text-white">0</span> results
+      </p>
+      <div class="flex items-center">
+        <label for="sort" class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">Sort by:</label>
+        <select id="sort" class="text-sm border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+          <option value="newest">Newest First</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="name_asc">Name: A to Z</option>
+          <option value="name_desc">Name: Z to A</option>
+        </select>
+      </div>
+    </div>
+    
     <!-- Equipment Grid -->
-    <div id="tractorGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- Tractor cards will be loaded here -->
+    <div id="tractorGrid" data-results-grid class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- Equipment cards will be loaded here by JavaScript -->
+    </div>
+    
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="mt-8 text-center hidden">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent"></div>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Loading more items...</p>
+    </div>
+    
+    <!-- No Results Message -->
+    <div id="noResults" class="hidden text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-white">No equipment found</h3>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your search or filter to find what you're looking for.</p>
+      <div class="mt-6">
+        <button type="button" id="resetFiltersBtn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          Reset all filters
+        </button>
+      </div>
     </div>
   
   </main>
@@ -592,8 +778,53 @@ function populateGrids(list){
 }
 document.addEventListener('DOMContentLoaded',()=>{populateGrids(dummyTractors);});
 </script>
+<!-- Marketplace Scripts -->
 <script type="module" src="assets/js/marketplace.js"></script>
+<script type="module" src="assets/js/marketplace-search.js"></script>
+<script type="module" src="assets/js/image-upload.js"></script>
+<script type="module" src="assets/js/price-history.js"></script>
+<script type="module" src="assets/js/favorites.js"></script>
 <script src="assets/js/floatingChatbot.js"></script>
+
+<script>
+  // Toggle advanced filters
+  document.getElementById('toggleAdvancedFilters')?.addEventListener('click', function() {
+    const filters = document.getElementById('advancedFilters');
+    const icon = this.querySelector('svg');
+    
+    filters.classList.toggle('hidden');
+    icon.classList.toggle('rotate-180');
+  });
+  
+  // Initialize marketplace search
+  document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize on pages with the search container
+    if (document.querySelector('[data-results-grid]')) {
+      const marketplaceSearch = new MarketplaceSearch({
+        container: document.querySelector('.container'),
+        defaultFilters: {
+          // Add any default filters here
+        }
+      });
+      
+      // Add event listener for reset filters button
+      document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
+        // Reset all filter inputs
+        document.querySelectorAll('input[type="text"], input[type="number"], select').forEach(input => {
+          if (input.type === 'checkbox' || input.type === 'radio') {
+            input.checked = false;
+          } else {
+            input.value = '';
+          }
+        });
+        
+        // Reset search
+        marketplaceSearch.filters = {};
+        marketplaceSearch.updateResults();
+      });
+    }
+  });
+</script>
   </main>
   
   <!-- Footer will be loaded here -->

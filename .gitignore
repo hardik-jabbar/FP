@@ -3,6 +3,8 @@ node_modules/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # OS generated files
 .DS_Store
@@ -47,6 +49,16 @@ build/
 *.dmg
 *.pkg
 *.exe
+
+# Vercel
+.vercel
+
+# Uploads (tracked with .gitkeep)
+FARMPOWER/uploads/*
+!FARMPOWER/uploads/.gitkeep
+
+# Local development
+.local-*
 
 # Application bundles
 *.app/
