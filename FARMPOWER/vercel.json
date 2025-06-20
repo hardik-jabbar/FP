@@ -6,12 +6,20 @@
       "use": "@vercel/node"
     },
     {
-      "src": "assets/**/*",
+      "src": "public/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "assets/**",
       "use": "@vercel/static"
     }
   ],
   "routes": [
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "handle": "filesystem" },
+    { "src": "/api/(.*)", "dest": "/api" },
     { "src": "/(.*)", "dest": "/server.js" }
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/server.js" }
   ]
 }

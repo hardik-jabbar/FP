@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const fs = require('fs');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
@@ -55,9 +56,32 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Static files
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/assets', express.static(path.join(__dirname, 'assets')));
+// Serve static files with proper caching
+const staticOptions = {
+  maxAge: '1y',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    }
+  }
+};
+
+// Serve static files from the root directory
+app.use(express.static(__dirname, staticOptions));
+app.use('/assets', express.static(path.join(__dirname, 'assets'), staticOptions));
+
+// Serve individual HTML files directly
+app.get('*.html', (req, res) => {
+  const filePath = path.join(__dirname, req.path);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    // If the file doesn't exist, serve the main index.html
+    res.sendFile(path.join(__dirname, 'index.html'));
+  }
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -142,7 +166,7 @@ app.use('/api', apiRouter);
 
 // Serve SPA (Single Page Application)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Error handling middleware
