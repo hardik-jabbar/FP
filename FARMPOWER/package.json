@@ -9,7 +9,7 @@
     "build": "echo 'Building FarmPower...'",
     "check-links": "node scripts/link-checker.js",
     "test": "jest",
-    "vercel-build": "npm install && npm run build"
+    "build:netlify": "npm install && npm run build"
   },
   "now": {
     "files": [

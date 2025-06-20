@@ -1,0 +1,47 @@
+[build]
+  command = "npm install && npm run build"
+  publish = "FARMPOWER"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+  NODE_ENV = "production"
+
+[dev]
+  framework = "#custom"
+  command = "cd FARMPOWER && npm run dev"
+  targetPort = 3000
+  port = 8888
+  publish = "FARMPOWER"
+  autoLaunch = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.auth0.com https://vercel.live https://*.vercel.app;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      img-src 'self' data: https:;
+      font-src 'self' https://fonts.gstatic.com;
+      connect-src 'self' https://*.auth0.com https://*.vercel.app;
+      frame-src 'self' https://*.auth0.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+    """
+
+# API proxy for serverless functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200

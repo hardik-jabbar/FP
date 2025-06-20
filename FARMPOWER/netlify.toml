@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build:netlify"
+  publish = "."
+  functions = "functions"
+
+[dev]
+  framework = "#custom"
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888
+  publish = "."
+  autoLaunch = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

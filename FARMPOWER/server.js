@@ -9,14 +9,17 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 require('dotenv').config();
+const serverless = require('serverless-http');
 
 // Initialize Express app
 const app = express();
-const server = http.createServer(app);
+const router = express.Router();
+const PORT = process.env.PORT || 3000;
 
 // Socket.io setup (disable in production if not needed)
 let io;
 if (process.env.NODE_ENV !== 'production') {
+  const server = http.createServer(app);
   io = socketIo(server, {
     cors: {
       origin: '*',
