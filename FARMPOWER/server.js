@@ -34,48 +34,44 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Security middleware with CSP
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'",
-        "'unsafe-eval'",
-        "https://cdn.tailwindcss.com",
-        "https://cdn.auth0.com",
-        "https://vercel.live"
-      ],
-      styleSrc: [
-        "'self'",
-        "'unsafe-inline'",
-        "https://fonts.googleapis.com"
-      ],
-      imgSrc: [
-        "'self'",
-        "data:",
-        "https://images.unsplash.com",
-        "https://*.vercel.app"
-      ],
-      fontSrc: [
-        "'self'",
-        "https://fonts.gstatic.com"
-      ],
-      connectSrc: [
-        "'self'",
-        "https://*.auth0.com",
-        "https://*.vercel.app"
-      ],
-      frameSrc: [
-        "'self'",
-        "https://*.auth0.com"
-      ]
-    }
-  },
+  contentSecurityPolicy: false, // Disable default CSP
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   xssFilter: true,
   noSniff: true,
   hidePoweredBy: true,
   frameguard: { action: 'deny' }
 }));
+
+// Set CSP headers manually
+app.use((req, res, next) => {
+  // Remove all Permissions-Policy headers first
+  res.removeHeader('Permissions-Policy');
+  
+  // Set CSP headers
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.auth0.com https://vercel.live https://fp-omega.vercel.app; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "img-src 'self' data: https:; " +
+    "font-src 'self' https://fonts.gstatic.com; " +
+    "connect-src 'self' https://*.auth0.com https://*.vercel.app; " +
+    "frame-src 'self' https://*.auth0.com; " +
+    "object-src 'none'; " +  // Disable plugins
+    "base-uri 'self'; " +    // Restrict base tag
+    "form-action 'self';"    // Restrict form actions
+  );
+  
+  // Set other security headers
+  res.setHeader(
+    'Referrer-Policy',
+    'strict-origin-when-cross-origin'
+  );
+  
+  next();
+});
 
 // Performance and logging
 app.use(compression());
@@ -123,25 +119,38 @@ const staticOptions = {
   }
 };
 
-// Serve static files from the root directory with proper caching and MIME types
-app.use(express.static(__dirname, {
-  ...staticOptions,
-  setHeaders: (res, path) => {
-    // Set proper content-type headers for different file types
-    if (path.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-    } else if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    } else if (path.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html');
-    } else if (path.endsWith('.json')) {
-      res.setHeader('Content-Type', 'application/json');
-    } else if (path.match(/\.(jpg|jpeg|png|gif|svg)$/)) {
-      const ext = path.split('.').pop();
-      res.setHeader('Content-Type', `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+// Configure static file serving with proper MIME types and caching
+const serveStatic = (path) => {
+  return express.static(path, {
+    setHeaders: (res, filePath) => {
+      // Set proper content-type headers for different file types
+      if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Content-Type', 'text/html');
+      } else if (filePath.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json');
+      } else if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico)$/i)) {
+        const ext = filePath.split('.').pop().toLowerCase();
+        res.setHeader('Content-Type', `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+      }
+      
+      // Set caching headers
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
     }
-  }
-}));
+  });
+};
+
+// Serve static files from the root directory
+app.use(serveStatic(__dirname));
+
+// Serve scripts from the scripts directory
+app.use('/scripts', serveStatic(path.join(__dirname, 'scripts')));
+
+// Serve assets from the assets directory
+app.use('/assets', serveStatic(path.join(__dirname, 'assets')));
 
 // Serve assets from the assets directory
 app.use('/assets', express.static(path.join(__dirname, 'assets'), staticOptions));

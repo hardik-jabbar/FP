@@ -2,78 +2,29 @@
   "version": 2,
   "builds": [
     {
-      "src": "FARMPOWER/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "FARMPOWER"
-      }
-    },
-    {
       "src": "FARMPOWER/server.js",
       "use": "@vercel/node"
     },
     {
-      "src": "FARMPOWER/api/**/*.js",
+      "src": "FARMPOWER/**/*.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "FARMPOWER/scripts/**/*.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "FARMPOWER/assets/**/*",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "FARMPOWER/**/*.{html,css,js,json,svg,png,jpg,jpeg,gif,ico}",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api"
+      "dest": "/FARMPOWER/server.js"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/FARMPOWER/assets/$1"
-    },
-    {
-      "src": "/scripts/(.*)",
-      "dest": "/FARMPOWER/scripts/$1"
+      "src": "/(.*\\.(?:css|js|jpg|jpeg|png|gif|svg|ico|json|html))",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/FARMPOWER/$1"
     },
     {
       "src": "/(.*)",
       "dest": "/FARMPOWER/server.js"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/FARMPOWER/(.*).js",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
-        }
-      ]
-    },
-    {
-      "source": "/FARMPOWER/(.*).css",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/css"
-        }
-      ]
-    },
-    {
-      "source": "/FARMPOWER/(.*).(jpg|jpeg|png|gif|svg|ico)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "image/$1"
-        }
-      ]
     }
   ]
 }
