@@ -8,6 +8,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
   <style>
     :root {
       --primary: #2563eb;
@@ -48,88 +52,85 @@
   }
 </style>
 </head>
-<body>
-<!-- Navigation Header -->
+<body class="min-h-screen flex flex-col">
+<!-- Header -->
 <header class="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
   <div class="container mx-auto px-4 md:px-6">
     <nav class="flex items-center justify-between py-4">
-      <!-- Logo -->
-      <a href="index.html" class="flex items-center space-x-2">
-        <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-8 w-auto">
-        <span class="text-xl font-bold">FarmPower</span>
-      </a>
-
-      <!-- Main Navigation -->
-      <ul class="hidden md:flex items-center space-x-8">
-        <li>
-          <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
-            Equipment Market
-          </a>
-        </li>
-        <li>
-          <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
-            Parts Market
-          </a>
-        </li>
-        <li>
-          <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
-            Service
-          </a>
-        </li>
-        <li>
-          <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
-            GPS Tracking
-          </a>
-        </li>
-        <li>
-          <a href="crop-calculator.html" class="text-foreground/80 hover:text-foreground transition-colors">
-            Crop Calculator
-          </a>
-        </li>
-      </ul>
-
-      <!-- User Menu -->
-      <div class="flex items-center space-x-4">
-        <a href="notifications.html" class="relative p-2 hover:bg-secondary rounded-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span id="notificationCount" class="absolute top-0 right-0 h-5 w-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">0</span>
+      <div class="flex items-center space-x-8">
+        <!-- Logo -->
+        <a href="index.html" class="flex items-center space-x-2">
+          <img src="assets/images/logo.png" alt="FarmPower Logo" class="h-10 w-auto">
         </a>
 
-        <!-- User Dropdown (when logged in) -->
-        <div id="userMenu" class="relative hidden">
-          <button onclick="toggleUserMenu()" class="flex items-center space-x-2 hover:bg-secondary rounded-lg p-2">
-            <img id="userAvatar" src="assets/images/avatar-placeholder.png" alt="User Avatar" class="h-8 w-8 rounded-full">
-            <span id="userName" class="text-sm font-medium">User Name</span>
+        <!-- Main Navigation -->
+        <ul class="hidden md:flex items-center space-x-6">
+          <li>
+            <a href="shop.html" class="text-foreground/80 hover:text-foreground transition-colors">
+              Equipment Market
+            </a>
+          </li>
+          <li>
+            <a href="parts-marketplace.html" class="text-foreground/80 hover:text-foreground transition-colors">
+              Parts Market
+            </a>
+          </li>
+          <li>
+            <a href="service-scheduling.html" class="text-foreground/80 hover:text-foreground transition-colors">
+              Service
+            </a>
+          </li>
+          <li>
+            <a href="gps-tracking.html" class="text-foreground/80 hover:text-foreground transition-colors">
+              GPS Tracking
+            </a>
+          </li>
+          <li>
+            <a href="crop-calculator.html" class="text-foreground font-medium hover:text-foreground transition-colors">
+              Crop Calculator
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Right side controls -->
+      <div class="flex items-center space-x-4">
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button onclick="toggleMobileMenu()" class="p-2 hover:bg-secondary rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
-          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1">
-            <a href="profile.html" class="block px-4 py-2 text-sm hover:bg-secondary">Profile</a>
-            <a href="my-equipment.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Equipment</a>
-            <a href="my-services.html" class="block px-4 py-2 text-sm hover:bg-secondary">My Services</a>
-            <a href="settings.html" class="block px-4 py-2 text-sm hover:bg-secondary">Settings</a>
-            <hr class="my-1 border-border">
-            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-secondary">
-              Logout
-            </button>
-          </div>
         </div>
 
-        <!-- Auth Buttons (when logged out) -->
-        <div id="authButtons" class="flex items-center space-x-4">
-          <a href="login.html" class="text-sm font-medium hover:text-primary">Login</a>
-          <a href="register.html" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
-            Register
-          </a>
-        </div>
-
-        <!-- Mobile Menu Button -->
-        <button onclick="toggleMobileMenu()" class="md:hidden p-2 hover:bg-secondary rounded-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 6h16M4 12h16M4 18h16"></path>
+        <!-- Dark Mode Toggle -->
+        <button id="themeToggle" class="p-2 rounded-lg hover:bg-secondary hidden md:block">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
           </svg>
         </button>
+
+        <!-- User Dropdown -->
+        <div class="relative" id="userMenu">
+          <button onclick="toggleUserMenu()" id="userMenuButton" class="flex items-center space-x-2 focus:outline-none">
+            <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span id="userInitials" class="font-medium">?</span>
+            </div>
+            <span class="hidden md:inline text-sm font-medium" id="userName">Guest</span>
+            <svg class="h-4 w-4 text-foreground/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          <!-- Dropdown Menu -->
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-border">
+            <a href="dashboard.html" class="block px-4 py-2 text-sm text-foreground/80 hover:bg-secondary">Dashboard</a>
+            <a href="settings.html" class="block px-4 py-2 text-sm text-foreground/80 hover:bg-secondary">Settings</a>
+            <div class="border-t border-border my-1"></div>
+            <a href="#" id="logoutBtn" class="block px-4 py-2 text-sm text-foreground/80 hover:bg-secondary">Sign out</a>
+          </div>
+        </div>
       </div>
     </nav>
   </div>
@@ -195,15 +196,19 @@
   function updateAuthState(isLoggedIn, userData = null) {
     const userMenu = document.getElementById('userMenu');
     const authButtons = document.getElementById('authButtons');
+    const userName = document.getElementById('userName');
+    const userAvatar = document.getElementById('userAvatar');
+    
+    if (!userMenu || !authButtons) return;
     
     if (isLoggedIn && userData) {
       userMenu.classList.remove('hidden');
       authButtons.classList.add('hidden');
       
-      // Update user info
-      document.getElementById('userName').textContent = userData.name;
-      if (userData.avatar) {
-        document.getElementById('userAvatar').src = userData.avatar;
+      // Update user info if elements exist
+      if (userName) userName.textContent = userData.name || 'User';
+      if (userData.avatar && userAvatar) {
+        userAvatar.src = userData.avatar;
       }
     } else {
       userMenu.classList.add('hidden');
@@ -214,6 +219,11 @@
   // Check authentication state on page load
   async function checkAuth() {
     try {
+      // Skip auth check if no user menu or auth buttons exist
+      if (!document.getElementById('userMenu') || !document.getElementById('authButtons')) {
+        return;
+      }
+      
       const response = await fetch('/api/user/me');
       if (response.ok) {
         const userData = await response.json();
@@ -240,7 +250,22 @@
 
   // Initialize
   checkAuth();
-</script> 
+</script>
+  
+  <script>
+    console.log('Script loaded, waiting for DOM...');
+    // Initialize the application when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM fully loaded, initializing app...');
+      try {
+        initApp();
+        console.log('App initialized successfully');
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
+    });
+  </script>
+
   <!-- Include Header -->
   <div id="header-placeholder"></div>
 
@@ -321,14 +346,115 @@
             </div>
           </div>
 
-          <button type="submit" class="w-full inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-lg font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+          <button type="submit" id="calculateBtn" class="w-full inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-lg font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
             Calculate Profit
           </button>
+          
+          <!-- Data Tabs -->
+          <div class="mt-8 w-full">
+            <div class="border-b border-border mb-6">
+              <nav class="-mb-px flex space-x-8 overflow-x-auto pb-1" aria-label="Tabs">
+                <button data-tab="history" class="tab-button flex items-center space-x-2 active border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                  </svg>
+                  <span>History</span>
+                </button>
+                <button data-tab="market" class="tab-button flex items-center space-x-2 border-transparent text-foreground/60 hover:text-foreground/80 hover:border-foreground/30 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.616 1.073 2.693 1.073 1.078 0 2.132-.424 2.694-1.073A1 1 0 1010.99 13v-1.04a4.53 4.53 0 001.676-.662C13.399 9.766 14 8.99 14 8c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 5.092V5z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Market Prices</span>
+                </button>
+                <button data-tab="weather" class="tab-button flex items-center space-x-2 border-transparent text-foreground/60 hover:text-foreground/80 hover:border-foreground/30 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+                  </svg>
+                  <span>Weather</span>
+                </button>
+                <button data-tab="yield" class="tab-button flex items-center space-x-2 border-transparent text-foreground/60 hover:text-foreground/80 hover:border-foreground/30 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M12 7a1 1 0 01.707.293l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L13.586 13H3a1 1 0 110-2h10.586l-2.293-2.293A1 1 0 0112 7z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Yield Predictions</span>
+                </button>
+              </nav>
+            </div>
+
+            <!-- History Tab Content -->
+            <div id="historySection" class="tab-content active">
+              <h2 class="text-xl font-semibold mb-4">Calculation History</h2>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Crop</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Cost</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- History items will be inserted here by JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Market Prices Tab Content -->
+            <div id="marketSection" class="tab-content hidden">
+              <h2 class="text-xl font-semibold mb-4">Market Prices</h2>
+              <div id="marketPriceInfo" class="mb-6">
+                <!-- Market price info will be inserted here -->
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow">
+                <div class="relative h-80 w-full">
+                  <canvas id="marketPriceChart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-500">
+                  <p>Market prices are updated daily. Select a crop type above to view historical prices.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Weather Data Tab Content -->
+            <div id="weatherSection" class="tab-content hidden">
+              <h2 class="text-xl font-semibold mb-4">Weather Forecast</h2>
+              <div id="weatherInfo" class="mb-6">
+                <!-- Weather info will be inserted here -->
+              </div>
+            </div>
+            
+            <!-- Yield Predictions Tab Content -->
+            <div id="yieldSection" class="tab-content hidden">
+              <h2 class="text-xl font-semibold mb-4">Yield Predictions</h2>
+              <div id="yieldPredictionInfo" class="mb-6"></div>
+              <canvas id="yieldPredictionChart" height="120"></canvas>
+            </div>
+          </div>
+          
+          <script>
+            // Direct click handler for the calculate button
+            document.addEventListener('DOMContentLoaded', function() {
+              // Original button handler
+              const calculateBtn = document.getElementById('calculateBtn');
+              if (calculateBtn) {
+                calculateBtn.addEventListener('click', function(e) {
+                  console.log('Calculate button clicked');
+                  e.preventDefault();
+                  handleFormSubmit(e).catch(console.error);
+                });
+              }
+            });
+          </script>
         </form>
       </div>
 
       <!-- Results Panel -->
-      <div id="resultsPanel" class="hidden lg:block space-y-6">
+      <div id="resultsPanel" class="hidden lg:block space-y-6 bg-white p-6 rounded-lg shadow-md">
         <div class="sticky top-24">
           <h2 class="text-xl font-semibold mb-4">Results</h2>
           
@@ -359,258 +485,1420 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- History Section -->
-    <div id="historySection" class="hidden mt-12 pt-8 border-t border-border">
-      <h2 class="text-xl font-semibold mb-4">Calculation History</h2>
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-border">
-              <th class="text-left py-3 px-4">Date</th>
-              <th class="text-left py-3 px-4">Crop</th>
-              <th class="text-left py-3 px-4">Area</th>
-              <th class="text-right py-3 px-4">Total Cost</th>
-              <th class="text-right py-3 px-4">Revenue</th>
-              <th class="text-right py-3 px-4">Profit</th>
-            </tr>
-          </thead>
-          <tbody id="historyTableBody"></tbody>
-        </table>
-      </div>
-    </div>
+
   </main>
 
-  <!-- Include Footer -->
-  <div id="footer-placeholder"></div>
+  <!-- Footer Placeholder -->
+  <footer id="footerPlaceholder" class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
+    <!-- Footer content will be loaded here -->
+  </footer>
+
+  <!-- Original footer (will be replaced) -->
+  <footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8" style="display: none;">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <!-- Company Info -->
+        <div>
+          <img src="assets/images/logo.png" alt="FarmPower" class="h-8 mb-4">
+          <p class="text-gray-400 mb-4">Empowering farmers with modern tools and technology for better farming.</p>
+          <div class="flex space-x-4">
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+              </svg>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.995 16.979H7.005v-9.95h9.99v9.95zM9 7.004a2.004 2.004 0 11-4.008 0A2.004 2.004 0 019 7.004zm11.428 9.975h-9.99V9.003h9.99v7.976z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div>
+          <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+          <ul class="space-y-2">
+            <li><a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+            <li><a href="/marketplace.html" class="text-gray-400 hover:text-white transition-colors">Marketplace</a></li>
+            <li><a href="/tractors.html" class="text-gray-400 hover:text-white transition-colors">Tractors</a></li>
+            <li><a href="/parts.html" class="text-gray-400 hover:text-white transition-colors">Parts</a></li>
+            <li><a href="/crop-calculator.html" class="text-gray-400 hover:text-white transition-colors">Crop Calculator</a></li>
+          </ul>
+        </div>
+
+        <!-- Support -->
+        <div>
+          <h3 class="text-lg font-semibold mb-4">Support</h3>
+          <ul class="space-y-2">
+            <li><a href="/faq.html" class="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+            <li><a href="/contact.html" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+            <li><a href="/shipping.html" class="text-gray-400 hover:text-white transition-colors">Shipping Info</a></li>
+            <li><a href="/returns.html" class="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+            <li><a href="/terms.html" class="text-gray-400 hover:text-white transition-colors">Terms & Conditions</a></li>
+          </ul>
+        </div>
+
+        <!-- Newsletter -->
+        <div>
+          <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+          <p class="text-gray-400 mb-4">Subscribe to our newsletter for updates and exclusive offers.</p>
+          <form class="space-y-2">
+            <input type="email" placeholder="Your email" class="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+            <button type="submit" class="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="pt-8 border-t border-dark-300">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+          <p class="text-gray-400 text-sm">&copy; 2024 FarmPower. All rights reserved.</p>
+          <div class="flex space-x-4 mt-4 md:mt-0">
+            <a href="/privacy.html" class="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+            <a href="/terms.html" class="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+            <a href="/sitemap.html" class="text-gray-400 hover:text-white text-sm transition-colors">Sitemap</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <script>
     // API Configuration
     const API_BASE_URL = 'http://localhost:8000';
-
-    // Load header and footer
-    fetch("components/header.html")
-      .then(response => response.text())
-      .then(data => {
-        document.getElementById('header-placeholder').innerHTML = data;
-      });
-
-    fetch("components/footer.html")
-      .then(response => response.text())
-      .then(data => {
-        document.getElementById('footer-placeholder').innerHTML = data;
-      });
-
-    // Initialize chart
+    const OPENWEATHER_API_KEY = '1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p'; // Replace with your actual OpenWeather API key
+    const ALPHA_VANTAGE_API_KEY = 'A1B2C3D4E5F6G7H8'; // Replace with your actual Alpha Vantage API key
+    
+    // Initialize charts and state
     let costBreakdownChart = null;
+    let marketChart = null;
+    let yieldChart = null;
+    let weatherChart = null;
+    let isLoading = false;
+    let currentLocation = { lat: 30.7333, lon: 76.7794 }; // Default to Chandigarh
 
-    // ====== Client-side CALCULATION (no backend needed) =====
-// Form submission handler
-    document.getElementById('calculatorForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // DOM Elements
+    const elements = {
+      headerPlaceholder: document.getElementById('header-placeholder'),
+      footerPlaceholder: document.getElementById('footer-placeholder'),
+      calculatorForm: document.getElementById('calculatorForm'),
+      resultsPanel: document.getElementById('resultsPanel'),
+      saveBtn: document.getElementById('saveBtn'),
+      exportBtn: document.getElementById('exportBtn'),
+      historyTableBody: document.getElementById('historyTableBody'),
+      marketPriceInfo: document.getElementById('marketPriceInfo'),
+      weatherInfo: document.getElementById('weatherInfo'),
+      yieldPredictionInfo: document.getElementById('yieldPredictionInfo'),
+      loadingIndicator: document.getElementById('loadingIndicator'),
+      errorAlert: document.getElementById('errorAlert')
+    };
+
+    // Initialize the application
+    async function initApp() {
+      console.log('initApp called - loading components...');
       
-      const formData = {
-        crop_type: document.getElementById('cropType').value,
-        field_area_acres: parseFloat(document.getElementById('fieldArea').value),
-        seed_cost_per_acre: parseFloat(document.getElementById('seedCost').value),
-        fertilizer_cost_per_acre: parseFloat(document.getElementById('fertilizerCost').value),
-        pesticide_cost_per_acre: parseFloat(document.getElementById('pesticideCost').value),
-        labor_cost_total: parseFloat(document.getElementById('laborCost').value),
-        other_costs_total: parseFloat(document.getElementById('otherCosts').value),
-        expected_yield_per_acre: parseFloat(document.getElementById('expectedYield').value),
-        market_price_per_unit: parseFloat(document.getElementById('marketPrice').value)
-      };
-
       try {
-        // Perform client-side calculation
-      const variable_cost_per_acre = formData.seed_cost_per_acre + formData.fertilizer_cost_per_acre + formData.pesticide_cost_per_acre;
-      const variable_cost_total = variable_cost_per_acre * formData.field_area_acres;
-      const fixed_cost_total = formData.labor_cost_total + formData.other_costs_total;
-      const total_cost = variable_cost_total + fixed_cost_total;
-      
-      const total_revenue = formData.expected_yield_per_acre * formData.market_price_per_unit * formData.field_area_acres;
-      const profit = total_revenue - total_cost;
-
-      const profit_margin = total_revenue === 0 ? 0 : (profit / total_revenue) * 100;
-
-      const result = {
-        total_cost,
-        revenue: total_revenue,
-        profit,
-        profit_margin,
-        cost_breakdown: {
-          Variable: variable_cost_total,
-          Labor: formData.labor_cost_total,
-          Other: formData.other_costs_total,
-          Seed: formData.seed_cost_per_acre * formData.field_area_acres,
-          Fertilizer: formData.fertilizer_cost_per_acre * formData.field_area_acres,
-          Pesticide: formData.pesticide_cost_per_acre * formData.field_area_acres
+        // Show loading state
+        setLoading(true);
+        
+        // Check if we're running in a file:// URL
+        const isFileProtocol = window.location.protocol === 'file:';
+        if (isFileProtocol) {
+          console.warn('Running with file:// protocol - some features may be limited');
+          showNotification('For best results, please use a local server', 'warning');
         }
-      };
 
-        updateResults(result);
-        document.getElementById('resultsPanel').classList.remove('hidden');
-        document.getElementById('saveBtn').classList.remove('hidden');
+        // Show the original header and footer by default
+        const originalHeader = document.querySelector('header:not(#headerPlaceholder)');
+        const originalFooter = document.querySelector('footer:not(#footerPlaceholder)');
+        
+        if (originalHeader) originalHeader.style.display = 'block';
+        if (originalFooter) originalFooter.style.display = 'block';
+
+        // Try to load header and footer components
+        try {
+          console.log('Loading header and footer...');
+          const [headerLoaded, footerLoaded] = await Promise.all([
+            fetchComponent('header.html').catch(e => {
+              console.error('Failed to load header:', e);
+              return false;
+            }),
+            fetchComponent('footer.html').catch(e => {
+              console.error('Failed to load footer:', e);
+              return false;
+            })
+          ]);
+
+          if (headerLoaded && footerLoaded) {
+            console.log('Successfully loaded all components');
+            // Hide original header/footer if components loaded successfully
+            if (originalHeader) originalHeader.style.display = 'none';
+            if (originalFooter) originalFooter.style.display = 'none';
+          } else {
+            console.warn('Failed to load some components, using fallback');
+            showNotification('Some components failed to load, using fallback UI', 'warning');
+          }
+        } catch (error) {
+          console.error('Error loading components:', error);
+          showNotification('Using fallback UI for some components', 'warning');
+        }
+        
+        // Initialize event listeners first
+        console.log('Setting up event listeners...');
+        setupEventListeners();
+        
+        // Setup tab switching
+        console.log('Setting up tab switching...');
+        setupTabSwitching();
+        
+        // Initialize market data
+        console.log('Initializing market data...');
+        renderMarketPrices();
+        
+        // Initialize yield prediction
+        console.log('Initializing yield prediction...');
+        renderYieldPrediction();
+        
+        // Load saved calculations from localStorage
+        console.log('Loading saved calculations...');
+        loadSavedCalculations();
+        
+        // Get user's location for weather data (only if not in file protocol)
+        if (!isFileProtocol && navigator.geolocation) {
+          console.log('Requesting geolocation...');
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('Got geolocation:', position.coords);
+              currentLocation = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+              };
+              // Initialize weather data after getting location
+              renderWeatherData();
+            },
+            (error) => {
+              console.warn('Geolocation error:', error);
+              showNotification('Using default location for weather data', 'info');
+              // Initialize with default location
+              renderWeatherData();
+            }
+          );
+        } else {
+          console.log('Skipping geolocation in file:// mode or geolocation not available');
+          // Initialize with default location in file protocol
+          renderWeatherData();
+        }
+        
+        console.log('App initialization complete');
+        
       } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to calculate. Please try again.');
+        console.error('Initialization error:', error);
+        showNotification('Failed to initialize application: ' + error.message, 'error');
+      } finally {
+        setLoading(false);
       }
-    });
+    }
 
-    // Save button handler
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-      const formData = {
-        crop_type: document.getElementById('cropType').value,
-        field_area: parseFloat(document.getElementById('fieldArea').value),
-        total_cost: parseFloat(document.getElementById('totalCost').textContent.replace('$', '')),
-        revenue: parseFloat(document.getElementById('totalRevenue').textContent.replace('$', '')),
-        profit: parseFloat(document.getElementById('totalProfit').textContent.replace('$', ''))
-      };
 
+    // ====== UTILITY FUNCTIONS =====
+    
+    async function fetchComponent(componentName) {
+      const url = `components/${componentName}`;
+      console.log(`Fetching component from: ${url}`);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/crop-profit/save`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
-        });
-
+        const response = await fetch(url);
         if (!response.ok) {
-          throw new Error('Failed to save calculation');
+          const error = new Error(`Failed to load ${url}: ${response.statusText}`);
+          console.error(error.message);
+          throw error;
         }
-
-        alert('Calculation saved successfully!');
-        loadHistory();
+        const html = await response.text();
+        console.log(`Successfully loaded ${url}`);
+        
+        // Remove any path and extension to get the base name
+        const baseName = componentName.split('/').pop().replace('.html', '');
+        const elementId = `${baseName}Placeholder`;
+        const element = document.getElementById(elementId);
+        
+        if (element) {
+          element.innerHTML = html;
+          console.log(`Updated #${elementId} with component content`);
+          return true;
+        } else {
+          console.error(`Element with ID ${elementId} not found in the DOM`);
+          return false;
+        }
       } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to save calculation. Please try again.');
+        console.error(`Error in fetchComponent for ${url}:`, error);
+        throw error; // Re-throw to be caught by the caller
       }
-    });
+    }
+    
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `fixed bottom-6 right-6 px-6 py-3 rounded-lg shadow-lg z-50 animate__animated animate__fadeInUp ${
+        type === 'error' ? 'bg-red-500' : 
+        type === 'success' ? 'bg-green-500' : 
+        'bg-blue-500'
+      } text-white`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.classList.remove('animate__fadeInUp');
+        notification.classList.add('animate__fadeOutDown');
+        setTimeout(() => notification.remove(), 300);
+      }, 5000);
+    }
+    
+    function setLoading(state) {
+      isLoading = state;
+      if (elements.loadingIndicator) {
+        elements.loadingIndicator.classList.toggle('hidden', !state);
+      }
+    }
+    
+    function formatCurrency(value) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+    
+    function formatDate(dateString) {
+      const options = { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      return new Date(dateString).toLocaleString('en-US', options);
+    }
+
+    // ====== Form Submission and Calculations =====
+    function setupEventListeners() {
+      console.log('Setting up event listeners...');
+      const form = document.getElementById('calculatorForm');
+      
+      if (!form) {
+        console.error('Form element not found!');
+        return;
+      }
+      
+      console.log('Form found, adding submit listener');
+      
+      // Add event listener using addEventListener
+      form.addEventListener('submit', function(e) {
+        console.log('Form submitted (via addEventListener)');
+        e.preventDefault();
+        console.log('Default prevented, calling handleFormSubmit');
+        handleFormSubmit(e).catch(error => {
+          console.error('Error in form submission:', error);
+        });
+      });
+      
+      // Also add direct onclick as a fallback
+      const submitButton = form.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.onclick = function(e) {
+          console.log('Submit button clicked (direct onclick)');
+          e.preventDefault();
+          handleFormSubmit(e).catch(console.error);
+        };
+      }
+      
+      // Initialize tab switching
+      setupTabSwitching();
+    }
+    
+    function setupTabSwitching() {
+      console.log('Setting up tab switching...');
+      const tabButtons = document.querySelectorAll('.tab-button');
+      
+      // Show the first tab by default if no tab is active
+      const activeTab = document.querySelector('.tab-button.active');
+      if (!activeTab && tabButtons.length > 0) {
+        tabButtons[0].classList.add('active', 'border-primary', 'text-primary');
+        const defaultTab = tabButtons[0].getAttribute('data-tab');
+        document.getElementById(`${defaultTab}Section`).classList.remove('hidden');
+      }
+      
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          try {
+            const tab = e.currentTarget.getAttribute('data-tab');
+            console.log(`Switching to tab: ${tab}`);
+            
+            // Update active tab
+            tabButtons.forEach(b => {
+              b.classList.remove('active', 'border-primary', 'text-primary');
+              b.classList.add('border-transparent', 'text-foreground/60');
+            });
+            
+            e.currentTarget.classList.add('active', 'border-primary', 'text-primary');
+            e.currentTarget.classList.remove('border-transparent', 'text-foreground/60');
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+              content.classList.add('hidden');
+            });
+            
+            // Show the selected tab content
+            const tabContent = document.getElementById(`${tab}Section`);
+            if (tabContent) {
+              tabContent.classList.remove('hidden');
+              
+              // Load data for the selected tab
+              switch(tab) {
+                case 'market':
+                  console.log('Loading market data...');
+                  renderMarketPrices();
+                  break;
+                case 'weather':
+                  console.log('Loading weather data...');
+                  renderWeatherData();
+                  break;
+                case 'yield':
+                  console.log('Loading yield prediction...');
+                  renderYieldPrediction();
+                  break;
+                case 'history':
+                  console.log('Loading history...');
+                  loadSavedCalculations();
+                  break;
+              }
+            } else {
+              console.error(`Tab content not found for: ${tab}`);
+            }
+          } catch (error) {
+            console.error('Error in tab switching:', error);
+          }
+        });
+        
+        // Trigger click on active tab to load its content
+        if (btn.classList.contains('active')) {
+          btn.click();
+        }
+      });
+      
+      console.log('Tab switching setup complete');
+    }
+    
+    // Handle form submission
+    async function handleFormSubmit(e) {
+      console.log('handleFormSubmit called');
+      
+      // Prevent default form submission
+      if (e && e.preventDefault) e.preventDefault();
+      
+      // Ensure the form exists
+      const form = document.getElementById('calculatorForm');
+      if (!form) {
+        console.error('Form not found in handleFormSubmit');
+        showNotification('Form not found', 'error');
+        return false;
+      }
+      
+      try {
+        // Show loading state
+        console.log('Setting loading state');
+        setLoading(true);
+        
+        // Get form data with proper parsing and defaults
+        const getNumericValue = (id) => {
+          const el = document.getElementById(id);
+          if (!el) {
+            console.warn(`Element with ID ${id} not found`);
+            return 0;
+          }
+          const value = parseFloat(el.value);
+          return isNaN(value) ? 0 : value;
+        };
+        
+        const formData = {
+          cropType: document.getElementById('cropType')?.value || '',
+          fieldArea: getNumericValue('fieldArea'),
+          seedCost: getNumericValue('seedCost'),
+          fertilizerCost: getNumericValue('fertilizerCost'),
+          pesticideCost: getNumericValue('pesticideCost'),
+          laborCost: getNumericValue('laborCost'),
+          otherCosts: getNumericValue('otherCosts'),
+          expectedYield: getNumericValue('expectedYield'),
+          marketPrice: getNumericValue('marketPrice')
+        };
+        
+        console.log('Form data:', formData);
+        
+        // Validate form data
+        if (!formData.cropType) {
+          throw new Error('Please select a crop type');
+        }
+        
+        if (formData.fieldArea <= 0) {
+          throw new Error('Field area must be greater than 0');
+        }
+        
+        // Perform calculations
+        console.log('Performing calculations...');
+        const result = calculateCropProfit(formData);
+        console.log('Calculation result:', result);
+        
+        if (!result) {
+          throw new Error('Failed to calculate results');
+        }
+        
+        // Update UI with results
+        updateResults(result);
+        
+        // Save to history
+        const calculation = {
+          ...formData,
+          ...result,
+          timestamp: new Date().toISOString()
+        };
+        
+        try {
+          const saved = saveCalculation(calculation);
+          if (!saved) {
+            console.warn('Failed to save calculation to history');
+          } else {
+            console.log('Calculation saved successfully');
+          }
+        } catch (error) {
+          console.error('Error saving calculation:', error);
+        }
+        
+        // Scroll to results on mobile
+        const resultsPanel = document.getElementById('resultsPanel');
+        if (resultsPanel && window.innerWidth < 1024) {
+          resultsPanel.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        return false; // Prevent form submission
+        
+      } catch (error) {
+        console.error('Error in form submission:', error);
+        const errorMessage = error.message || 'An error occurred. Please try again.';
+        console.error('Error details:', errorMessage);
+        showNotification(errorMessage, 'error');
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    // Calculate crop profit
+    function calculateCropProfit(formData) {
+      // Default values to prevent undefined errors
+      const {
+        fieldArea = 0,
+        seedCost = 0,
+        fertilizerCost = 0,
+        pesticideCost = 0,
+        laborCost = 0,
+        otherCosts = 0,
+        expectedYield = 0,
+        marketPrice = 0
+      } = formData || {};
+      
+      // Calculate costs
+      const variableCostPerAcre = seedCost + fertilizerCost + pesticideCost;
+      const totalVariableCost = variableCostPerAcre * fieldArea;
+      const totalFixedCost = laborCost + otherCosts;
+      const totalCost = totalVariableCost + totalFixedCost;
+      
+      // Calculate revenue and profit
+      const totalYield = expectedYield * fieldArea;
+      const totalRevenue = totalYield * marketPrice;
+      const profit = totalRevenue - totalCost;
+      const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+      
+      // Prepare cost breakdown
+      const costBreakdown = {
+        'Seed': seedCost * fieldArea,
+        'Fertilizer': fertilizerCost * fieldArea,
+        'Pesticide': pesticideCost * fieldArea,
+        'Labor': laborCost,
+        'Other': otherCosts
+      };
+      
+      return {
+        totalCost,
+        totalRevenue,
+        profit,
+        profitMargin: profitMargin.toFixed(1),
+        totalYield,
+        costBreakdown
+      };
+    }
 
     // Update results display
     function updateResults(data) {
-      document.getElementById('totalCost').textContent = formatCurrency(data.total_cost);
-      document.getElementById('totalRevenue').textContent = formatCurrency(data.revenue);
-      document.getElementById('totalProfit').textContent = formatCurrency(data.profit);
-      document.getElementById('profitMargin').textContent = `${data.profit_margin.toFixed(1)}% margin`;
-
-      updateChart(data);
+      console.log('updateResults called with data:', data);
+      try {
+        // Make sure the results panel is visible
+        const resultsPanel = document.getElementById('resultsPanel');
+        if (!resultsPanel) {
+          console.error('Results panel not found');
+          return;
+        }
+        
+        console.log('Results panel element:', resultsPanel);
+        resultsPanel.classList.remove('hidden');
+        
+        // Update the results panel with the calculation data
+        const updateElement = (id, value) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = value;
+          else console.error(`Element with ID ${id} not found`);
+        };
+        
+        updateElement('totalCost', formatCurrency(data.totalCost));
+        updateElement('totalRevenue', formatCurrency(data.totalRevenue));
+        
+        const profitEl = document.getElementById('totalProfit');
+        const profitMarginEl = document.getElementById('profitMargin');
+        
+        if (profitEl) {
+          profitEl.textContent = formatCurrency(data.profit);
+          const isProfit = data.profit >= 0;
+          profitEl.className = 'text-2xl font-bold ' + (isProfit ? 'text-green-600' : 'text-red-600');
+          
+          if (profitMarginEl) {
+            profitMarginEl.textContent = `${data.profitMargin}% margin`;
+            profitMarginEl.className = `text-sm text-muted-foreground mt-1 ${isProfit ? 'text-green-600' : 'text-red-600'}`;
+          }
+        }
+        
+        // Update chart if data has cost breakdown
+        if (data.costBreakdown) {
+          updateChart(data);
+        }
+        
+      } catch (error) {
+        console.error('Error updating results:', error);
+        showNotification('Error displaying results', 'error');
+      }
+    }
+    
+    // Save calculation to localStorage
+    function saveCalculation(calculation) {
+      try {
+        // Get existing calculations or initialize empty array
+        const savedCalculations = JSON.parse(localStorage.getItem('cropCalculations') || '[]');
+        
+        // Add new calculation with timestamp
+        savedCalculations.unshift({
+          ...calculation,
+          id: Date.now(),
+          timestamp: new Date().toISOString()
+        });
+        
+        // Keep only the last 50 calculations
+        const recentCalculations = savedCalculations.slice(0, 50);
+        
+        // Save back to localStorage
+        localStorage.setItem('cropCalculations', JSON.stringify(recentCalculations));
+        
+        console.log('Calculation saved successfully');
+        return true;
+      } catch (error) {
+        console.error('Error saving calculation:', error);
+        return false;
+      }
+    }
+    
+    // Load saved calculations from localStorage
+    function loadSavedCalculations() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('cropCalculations') || '[]');
+        console.log('Loaded saved calculations:', saved);
+        return saved;
+      } catch (error) {
+        console.error('Error loading saved calculations:', error);
+        return [];
+      }
+    }
+    
+    function updateChart(data) {
+      try {
+        const canvas = document.getElementById('costBreakdownChart');
+        if (!canvas) {
+          console.error('Chart canvas not found');
+          return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          console.error('Could not get 2D context for chart');
+          return;
+        }
+        
+        // Safely destroy existing chart if it exists and is a valid Chart instance
+        if (window.costBreakdownChart && typeof window.costBreakdownChart.destroy === 'function') {
+          try {
+            window.costBreakdownChart.destroy();
+            console.log('Destroyed existing chart instance');
+          } catch (destroyError) {
+            console.warn('Error destroying previous chart:', destroyError);
+            // Clear the reference if destroy fails
+            window.costBreakdownChart = null;
+          }
+        }
+        
+        // Ensure we have cost breakdown data
+        if (!data.costBreakdown) {
+          console.warn('No cost breakdown data provided');
+          return;
+        }
+        
+        const labels = Object.keys(data.costBreakdown);
+        const values = Object.values(data.costBreakdown);
+        
+        // Generate colors
+        const backgroundColors = [
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(75, 192, 192, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(153, 102, 255, 0.7)'
+        ];
+        
+        try {
+          window.costBreakdownChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: labels,
+              datasets: [{
+                data: values,
+                backgroundColor: backgroundColors,
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'right',
+                }
+              }
+            }
+          });
+          console.log('Chart rendered successfully');
+        } catch (chartError) {
+          console.error('Error creating chart:', chartError);
+        }
+        
+        // Update the cost breakdown list
+        const costList = document.getElementById('costBreakdownList');
+        if (costList) {
+          costList.innerHTML = '';
+          
+          Object.entries(data.costBreakdown).forEach(([key, value], index) => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center justify-between py-1';
+            li.innerHTML = `
+              <div class="flex items-center">
+                <span class="inline-block w-3 h-3 rounded-full mr-2" style="background-color: ${backgroundColors[index % backgroundColors.length]}"></span>
+                <span class="capitalize">${key.replace(/([A-Z])/g, ' $1').trim()}</span>
+              </div>
+              <span class="font-medium">${formatCurrency(value)}</span>
+            `;
+            costList.appendChild(li);
+          });
+        } else {
+          console.error('Cost breakdown list element not found');
+        }
+        
+      } catch (error) {
+        console.error('Error updating chart:', error);
+      }
     }
 
-    // Update chart
-    function updateChart(data) {
-      const ctx = document.getElementById('costBreakdownChart').getContext('2d');
+    // Market prices data with more realistic values and trends
+    const marketPrices = {
+      wheat: [210, 215, 220, 225, 230, 235, 240],
+      corn: [180, 185, 182, 188, 190, 195, 200],
+      soybeans: [320, 318, 315, 310, 308, 305, 300],
+      rice: [15.50, 15.75, 15.60, 15.90, 16.00, 16.20, 16.50],
+      cotton: [0.85, 0.86, 0.87, 0.85, 0.88, 0.90, 0.92]
+    };
+    
+    const marketDates = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      marketDates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    }
+
+    // Initialize market chart
+    function initMarketChart(crop = 'wheat') {
+      console.log(`Initializing market chart for crop: ${crop}`);
       
-      if (costBreakdownChart) {
-        costBreakdownChart.destroy();
+      try {
+        // Ensure the market section is visible
+        const marketSection = document.getElementById('marketSection');
+        if (!marketSection) {
+          console.error('Market section not found');
+          return;
+        }
+        
+        // Make sure the tab is active
+        if (marketSection.classList.contains('hidden')) {
+          console.log('Market section is hidden, making it visible');
+          marketSection.classList.remove('hidden');
+        }
+        
+        // Get the canvas element
+        const canvas = document.getElementById('marketPriceChart');
+        if (!canvas) {
+          console.error('Market price chart canvas not found');
+          return;
+        }
+        
+        // Set explicit dimensions for the canvas
+        const container = canvas.parentElement;
+        if (container) {
+          canvas.width = container.offsetWidth;
+          canvas.height = container.offsetHeight;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          console.error('Could not get 2D context for market chart');
+          return;
+        }
+        
+        // Destroy existing chart if it exists
+        if (window.marketPriceChartInstance) {
+          try {
+            console.log('Destroying existing market chart instance');
+            window.marketPriceChartInstance.destroy();
+          } catch (e) {
+            console.warn('Error destroying market chart:', e);
+          }
+        }
+        
+        // Get prices for the selected crop
+        const prices = marketPrices[crop] || marketPrices.wheat;
+        const labels = marketDates.length === prices.length ? marketDates : 
+                     Array.from({length: prices.length}, (_, i) => `Day ${i + 1}`);
+        
+        console.log('Creating new market chart with data:', { crop, prices, labels });
+        
+        // Create new chart instance
+        window.marketPriceChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: `${crop.charAt(0).toUpperCase() + crop.slice(1)} Price ($)`,
+              data: prices,
+              borderColor: 'rgb(59, 130, 246)',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: true,
+              pointBackgroundColor: 'rgb(59, 130, 246)',
+              pointBorderColor: '#fff',
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: 'rgb(59, 130, 246)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+              duration: 1000,
+              easing: 'easeInOutQuart'
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  font: {
+                    size: 14
+                  },
+                  padding: 20
+                }
+              },
+              tooltip: {
+                backgroundColor: 'white',
+                titleColor: '#111827',
+                bodyColor: '#4B5563',
+                borderColor: '#E5E7EB',
+                borderWidth: 1,
+                padding: 12,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                titleFont: {
+                  weight: 'bold',
+                  size: 14
+                },
+                bodyFont: {
+                  size: 13
+                },
+                callbacks: {
+                  label: function(context) {
+                    return `$${context.parsed.y.toFixed(2)}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                grid: {
+                  color: 'rgba(229, 231, 235, 0.5)'
+                },
+                title: {
+                  display: true,
+                  text: 'Price ($)',
+                  font: {
+                    weight: 'bold'
+                  }
+                },
+                ticks: {
+                  callback: function(value) {
+                    return '$' + value.toFixed(2);
+                  }
+                }
+              },
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45
+                }
+              }
+            },
+            layout: {
+              padding: {
+                top: 10,
+                right: 20,
+                bottom: 10,
+                left: 10
+              }
+            }
+          }
+        });
+        
+        console.log(`Market chart successfully initialized for ${crop}`);
+        
+      } catch (error) {
+        console.error('Error initializing market chart:', error);
+        // Show error to user
+        const marketPriceInfo = document.getElementById('marketPriceInfo');
+        if (marketPriceInfo) {
+          marketPriceInfo.innerHTML = `
+            <div class="bg-red-50 border-l-4 border-red-400 p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">
+                    Failed to load market data. Please try again later.
+                  </p>
+                </div>
+              </div>
+            </div>
+          `;
+        }
       }
+    }
+    
+    // Render market prices section with enhanced dummy data
+    function renderMarketPrices() {
+      console.log('Rendering market prices...');
+      
+      try {
+        const marketPriceInfo = document.getElementById('marketPriceInfo');
+        if (!marketPriceInfo) {
+          console.error('Market price info element not found');
+          return;
+        }
+        
+        const cropType = document.getElementById('cropType')?.value || 'wheat';
+        const prices = marketPrices[cropType] || marketPrices.wheat;
+        
+        if (!prices || !Array.isArray(prices) || prices.length === 0) {
+          console.error('No price data available for crop:', cropType);
+          marketPriceInfo.innerHTML = `
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-yellow-700">
+                    No market data available for ${cropType}. Using default data.
+                  </p>
+                </div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        
+        const currentPrice = prices[prices.length - 1];
+        const previousPrice = prices.length > 1 ? prices[prices.length - 2] : currentPrice;
+        const priceChange = currentPrice - previousPrice;
+        const changePercent = previousPrice !== 0 ? ((priceChange / previousPrice) * 100).toFixed(2) : '0.00';
+        
+        // Add more detailed market information
+        const marketTrends = {
+          wheat: 'Prices rising due to high global demand',
+          corn: 'Stable with slight upward trend',
+          soybeans: 'Strong demand from international markets',
+          rice: 'Seasonal increase expected',
+          cotton: 'Limited supply driving prices up'
+        };
+        
+        const displayName = cropType.charAt(0).toUpperCase() + cropType.slice(1);
+        
+        marketPriceInfo.innerHTML = `
+          <div class="bg-blue-50 p-4 rounded-lg mb-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-lg font-semibold text-gray-900">${displayName} Market</h3>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    ${cropType.toUpperCase()}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-baseline mt-1 gap-2">
+                  <span class="text-2xl font-bold text-gray-900">$${currentPrice.toFixed(2)}</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    priceChange >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }">
+                    ${priceChange >= 0 ? '↑' : '↓'} $${Math.abs(priceChange).toFixed(2)} (${Math.abs(changePercent)}%)
+                  </span>
+                  <span class="text-sm text-gray-500">vs previous day</span>
+                </div>
+              </div>
+              <div class="w-full sm:w-auto text-left sm:text-right">
+                <div class="text-sm text-gray-500 mb-1">Market Trend</div>
+                <div class="text-sm font-medium text-blue-600">
+                  ${marketTrends[cropType] || 'Market data available'}
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-gray-100">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-3 rounded-lg border border-gray-100">
+                  <div class="text-sm font-medium text-gray-500">7-Day High</div>
+                  <div class="mt-1 text-lg font-semibold text-gray-900">$${Math.max(...prices).toFixed(2)}</div>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-gray-100">
+                  <div class="text-sm font-medium text-gray-500">7-Day Average</div>
+                  <div class="mt-1 text-lg font-semibold text-gray-900">$${(prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2)}</div>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-gray-100">
+                  <div class="text-sm font-medium text-gray-500">7-Day Low</div>
+                  <div class="mt-1 text-lg font-semibold text-gray-900">$${Math.min(...prices).toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-3 pt-3 border-t border-gray-100">
+              <div class="flex items-center text-sm text-gray-500">
+                <svg class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Data is updated daily. Last updated: ${new Date().toLocaleDateString()}
+              </div>
+            </div>
+          </div>
+        `;
+        
+        console.log('Market price info rendered successfully');
+        
+        // Initialize or update chart after a short delay to ensure DOM is ready
+        setTimeout(() => {
+          initMarketChart(cropType);
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error rendering market prices:', error);
+        const marketPriceInfo = document.getElementById('marketPriceInfo');
+        if (marketPriceInfo) {
+          marketPriceInfo.innerHTML = `
+            <div class="bg-red-50 border-l-4 border-red-400 p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">
+                    Failed to load market data. Please try refreshing the page.
+                  </p>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      
+      // Add event listener for crop type changes if not already added
+      const cropTypeSelect = document.getElementById('cropType');
+      if (cropTypeSelect && !cropTypeSelect.dataset.marketListenerAdded) {
+        cropTypeSelect.dataset.marketListenerAdded = 'true';
+        cropTypeSelect.addEventListener('change', () => {
+          const newCropType = cropTypeSelect.value;
+          console.log('Crop type changed to:', newCropType);
+          renderMarketPrices();
+        });
+      }
+    }
 
-      const getNum = (id) => {
-    const v = parseFloat(document.getElementById(id).value);
-    return isNaN(v) ? 0 : v;
-  };
+    // Mock weather data
+    const weather = {
+      location: 'Farmville',
+      today: { temp: 24, desc: 'Sunny', icon: '☀️' },
+      forecast: [
+        { day: 'Tue', temp: 25, desc: 'Partly Cloudy', icon: '⛅' },
+        { day: 'Wed', temp: 23, desc: 'Rain', icon: '🌧️' },
+        { day: 'Thu', temp: 22, desc: 'Cloudy', icon: '☁️' },
+        { day: 'Fri', temp: 26, desc: 'Sunny', icon: '☀️' },
+      ]
+    };
 
-  const fieldArea = getNum('fieldArea');
-      let costs = {
-        'Seed': getNum('seedCost') * fieldArea,
-        'Fertilizer': getNum('fertilizerCost') * fieldArea,
-        'Pesticide': getNum('pesticideCost') * fieldArea,
-        'Labor': getNum('laborCost'),
-        'Other': getNum('otherCosts')
+    // Render weather data
+    function renderWeatherData() {
+      document.getElementById('weatherInfo').innerHTML = `
+        <div class='mb-4'>
+          <div class='text-lg font-bold'>${weather.location}</div>
+          <div class='flex items-center space-x-2 text-2xl'>
+            <span>${weather.today.icon}</span>
+            <span>${weather.today.temp}&deg;C</span>
+            <span class='text-base'>${weather.today.desc}</span>
+          </div>
+        </div>
+        <div class='grid grid-cols-2 md:grid-cols-4 gap-4'>
+          ${weather.forecast.map(f => `
+            <div class='p-3 rounded-lg border border-border flex flex-col items-center'>
+              <div class='text-xl'>${f.icon}</div>
+              <div class='font-semibold'>${f.day}</div>
+              <div>${f.temp}&deg;C</div>
+              <div class='text-sm text-muted-foreground'>${f.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderYieldPrediction() {
+      const yieldPredictionInfo = document.getElementById('yieldPredictionInfo');
+      if (!yieldPredictionInfo) return;
+      
+      // Enhanced dummy prediction data
+      const cropType = document.getElementById('cropType')?.value || 'wheat';
+      const predictionData = {
+        currentYield: 3.2,
+        predictedYield: 3.8,
+        confidence: 87,
+        lastUpdated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        nextUpdate: 'Tomorrow at 6 AM',
+        fieldConditions: {
+          soilMoisture: 68,
+          temperature: 72,
+          ndvi: 0.78,
+          growthStage: 'Flowering',
+          daysToHarvest: 42,
+          pestPressure: 'Low'
+        },
+        factors: [
+          { name: 'Soil Quality', impact: 'High', trend: 'positive', value: '8.5/10', icon: '🌱' },
+          { name: 'Weather Conditions', impact: 'Favorable', trend: 'positive', value: 'Ideal', icon: '☀️' },
+          { name: 'Pest Pressure', impact: 'Low', trend: 'negative', value: 'Minimal', icon: '🐛' },
+          { name: 'Irrigation', impact: 'Optimal', trend: 'positive', value: 'Adequate', icon: '💧' }
+        ],
+        recommendations: [
+          'Consider additional nitrogen application in 2 weeks',
+          'Monitor for signs of rust disease',
+          'Next irrigation scheduled in 3 days'
+        ]
       };
-
-      // Remove zero-value categories so Chart.js renders correctly
-  costs = Object.fromEntries(Object.entries(costs).filter(([_k,v]) => v && v > 0));
-
-  // If all values are zero, clear chart and list then exit
-  if (Object.values(costs).length === 0) {
-    if (costBreakdownChart) costBreakdownChart.destroy();
-    const list = document.getElementById('costBreakdownList');
-    if (list) list.innerHTML = '<li class="text-muted-foreground">No cost data yet</li>';
-    return;
-  }
-
-  costBreakdownChart = new Chart(ctx, {
-        type: 'doughnut',
+      
+      // Render the yield prediction UI
+      yieldPredictionInfo.innerHTML = `
+        <div class="space-y-6">
+          <!-- Yield Overview -->
+          <div class="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-xl shadow-sm border border-green-100">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">${cropType.charAt(0).toUpperCase() + cropType.slice(1)} Yield Prediction</h3>
+                <p class="text-sm text-gray-600 mt-1">Updated ${predictionData.lastUpdated} • Next update: ${predictionData.nextUpdate}</p>
+              </div>
+              <div class="mt-4 md:mt-0 text-center md:text-right">
+                <div class="text-3xl font-bold text-green-700">${predictionData.predictedYield} <span class="text-lg">t/ha</span></div>
+                <div class="text-sm text-green-600 font-medium flex items-center justify-center md:justify-end mt-1">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12 7a1 1 0 01.707.293l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L13.586 13H3a1 1 0 110-2h10.586l-2.293-2.293A1 1 0 0112 7z" clip-rule="evenodd" />
+                  </svg>
+                  ${((predictionData.predictedYield - predictionData.currentYield) / predictionData.currentYield * 100).toFixed(1)}% above average
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                <div class="text-gray-500 text-sm">Prediction Confidence</div>
+                <div class="text-2xl font-bold text-blue-600">${predictionData.confidence}%</div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                  <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${predictionData.confidence}%"></div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                <div class="text-gray-500 text-sm">Growth Stage</div>
+                <div class="text-xl font-semibold">${predictionData.fieldConditions.growthStage}</div>
+                <div class="text-xs text-gray-500 mt-1">${predictionData.fieldConditions.daysToHarvest} days to harvest</div>
+              </div>
+              <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                <div class="text-gray-500 text-sm">Soil Moisture</div>
+                <div class="text-xl font-semibold">${predictionData.fieldConditions.soilMoisture}%</div>
+                <div class="text-xs text-green-600 mt-1">Optimal</div>
+              </div>
+              <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                <div class="text-gray-500 text-sm">Crop Health (NDVI)</div>
+                <div class="text-xl font-semibold">${predictionData.fieldConditions.ndvi}</div>
+                <div class="text-xs text-green-600 mt-1">Healthy</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Key Factors -->
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <h4 class="font-semibold text-gray-800 mb-4">Key Yield Factors</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${predictionData.factors.map(factor => `
+                <div class="flex items-start p-3 rounded-lg border ${factor.trend === 'positive' ? 'border-green-100 bg-green-50' : factor.trend === 'negative' ? 'border-red-100 bg-red-50' : 'border-yellow-100 bg-yellow-50'}">
+                  <span class="text-2xl mr-3">${factor.icon}</span>
+                  <div>
+                    <div class="font-medium text-gray-800">${factor.name}</div>
+                    <div class="flex items-center mt-1">
+                      <span class="text-sm ${factor.trend === 'positive' ? 'text-green-700' : factor.trend === 'negative' ? 'text-red-700' : 'text-yellow-700'}">
+                        ${factor.impact}
+                      </span>
+                      <span class="mx-2 text-gray-300">•</span>
+                      <span class="text-xs text-gray-500">${factor.value}</span>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Recommendations -->
+          <div class="bg-blue-50 p-5 rounded-xl border border-blue-100">
+            <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+              </svg>
+              Recommendations
+            </h4>
+            <ul class="space-y-2">
+              ${predictionData.recommendations.map(rec => `
+                <li class="flex items-start">
+                  <svg class="h-5 w-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span class="text-blue-800">${rec}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+          
+          <!-- Historical Comparison -->
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-semibold text-gray-800">Yield Trend</h4>
+              <div class="text-sm text-gray-500">Last 5 years</div>
+            </div>
+            <div class="h-48">
+              <canvas id="yieldTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Initialize yield trend chart
+      initYieldTrendChart();
+      
+      // Initialize or update yield prediction chart
+      initYieldPredictionChart();
+    }
+    
+    function initYieldTrendChart() {
+      const ctx = document.getElementById('yieldTrendChart');
+      if (!ctx) return;
+      
+      // Destroy existing chart if it exists
+      if (window.yieldTrendChartInstance) {
+        window.yieldTrendChartInstance.destroy();
+      }
+      
+      // Generate data for the last 5 years
+      const years = [];
+      const yields = [];
+      const currentYear = new Date().getFullYear();
+      
+      for (let i = 4; i >= 0; i--) {
+        years.push((currentYear - i).toString());
+        // Generate random yields around 3.0-4.0 t/ha with some variation
+        yields.push(3.0 + Math.random() * 1.0);
+      }
+      
+      // Set the predicted yield for the current year
+      yields[years.length - 1] = 3.8; // Our predicted yield
+      
+      window.yieldTrendChartInstance = new Chart(ctx, {
+        type: 'line',
         data: {
-          labels: Object.keys(costs),
+          labels: years,
           datasets: [{
-            data: Object.values(costs),
-            backgroundColor: [
-              '#2563eb',
-              '#7c3aed',
-              '#db2777',
-              '#ea580c',
-              '#65a30d'
-            ]
+            label: 'Yield (t/ha)',
+            data: yields,
+            borderColor: 'rgb(16, 185, 129)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: 'white',
+            pointBorderColor: 'rgb(16, 185, 129)',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
           }]
         },
         options: {
           responsive: true,
-      maintainAspectRatio: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'bottom'
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'white',
+              titleColor: '#111827',
+              bodyColor: '#4B5563',
+              borderColor: '#E5E7EB',
+              borderWidth: 1,
+              padding: 12,
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              callbacks: {
+                label: function(context) {
+                  return `Yield: ${context.parsed.y.toFixed(2)} t/ha`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              grid: {
+                color: 'rgba(229, 231, 235, 0.5)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value + ' t/ha';
+                }
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
             }
           }
         }
       });
-
-    // Populate textual cost breakdown list
-    const list = document.getElementById('costBreakdownList');
-    if (list) {
-      list.innerHTML = '';
-      Object.entries(costs).forEach(([label, value]) => {
-        const li = document.createElement('li');
-        li.textContent = `${label}: ${formatCurrency(value)}`;
-        list.appendChild(li);
-      });
     }
-    }
-
-    // Load calculation history
-    async function loadHistory() {
+    
+    function initYieldPredictionChart() {
+      // This function can be used to initialize any additional charts for yield prediction
+      // Currently, we're just using the yield trend chart
       try {
-        const response = await fetch(`${API_BASE_URL}/api/crop-profit/history`);
-        if (!response.ok) {
-          throw new Error('Failed to load history');
+        const chartEl = document.getElementById('yieldPredictionChart');
+        if (chartEl) {
+          const ctx = chartEl.getContext('2d');
+          // Add any additional chart initialization code here if needed
         }
-
-        const history = await response.json();
-        const tbody = document.getElementById('historyTableBody');
-        tbody.innerHTML = '';
-
-        history.forEach(calc => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td class="py-3 px-4">${new Date(calc.created_at).toLocaleDateString()}</td>
-            <td class="py-3 px-4">${calc.crop_type}</td>
-            <td class="py-3 px-4">${calc.field_area} acres</td>
-            <td class="py-3 px-4 text-right">${formatCurrency(calc.total_cost)}</td>
-            <td class="py-3 px-4 text-right">${formatCurrency(calc.revenue)}</td>
-            <td class="py-3 px-4 text-right">${formatCurrency(calc.profit)}</td>
-          `;
-          tbody.appendChild(row);
-        });
-
-        document.getElementById('historySection').classList.remove('hidden');
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error initializing yield prediction chart:', error);
       }
     }
-
-    // Format currency
-    function formatCurrency(value) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      }).format(value);
+    
+    // Initialize the application
+    function initApp() {
+      try {
+        // Initialize market data and weather
+        renderMarketPrices();
+        renderWeatherData();
+        
+        // Initialize yield prediction
+        renderYieldPrediction();
+        
+        // Initialize yield trend chart
+        initYieldTrendChart();
+        
+        // Initialize yield prediction chart if element exists
+        const chartEl = document.getElementById('yieldPredictionChart');
+        if (chartEl) {
+          initYieldPredictionChart();
+        }
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'bg-red-50 border-l-4 border-red-400 p-4 mb-4';
+        errorDiv.innerHTML = `
+          <div class='flex'>
+            <div class='flex-shrink-0'>
+              <svg class='h-5 w-5 text-red-400' fill='currentColor' viewBox='0 0 20 20'>
+                <path fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z' clip-rule='evenodd' />
+              </svg>
+            </div>
+            <div class='ml-3'>
+              <p class='text-sm text-red-700'>
+                Error initializing application: ${error.message}
+              </p>
+            </div>
+          </div>
+        `;
+        document.body.prepend(errorDiv);
+      }
     }
-
-    // Load history on page load
-    loadHistory();
+    
+    // Initialize the app when the DOM is fully loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
   </script>
 <!-- Footer -->
 <footer class="bg-dark-200 border-t border-dark-300 pt-12 pb-8">
@@ -690,32 +1978,39 @@
   </div>
 </footer>
 
+<div id="footerPlaceholder"></div>
+
 <script>
   // Newsletter form submission
-  document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = e.target.querySelector('input[type="email"]').value;
-    
-    try {
-      const response = await fetch('/api/newsletter/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-      });
+  const newsletterForm = document.getElementById('newsletterForm');
+  if (newsletterForm) {
+    newsletterForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = e.target.querySelector('input[type="email"]').value;
+      
+      try {
+        const response = await fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email })
+        });
 
-      if (response.ok) {
-        alert('Thank you for subscribing!');
-        e.target.reset();
-      } else {
-        throw new Error('Failed to subscribe');
+        if (response.ok) {
+          alert('Thank you for subscribing!');
+          e.target.reset();
+        } else {
+          throw new Error('Failed to subscribe');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        if (alert) {
+          alert('Failed to subscribe. Please try again.');
+        }
       }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Failed to subscribe. Please try again.');
-    }
-  });
+    });
+  }
 </script> 
   <script src="assets/js/floatingChatbot.js"></script>
 
