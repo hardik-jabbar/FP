@@ -1,6 +1,8 @@
+from typing import Any, Dict, Optional, Union
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
@@ -27,7 +29,7 @@ async def get_current_user(
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        email: str | None = payload.get("sub")
+        email: Optional[str] = payload.get("sub")
         if email is None:
             raise credentials_exception
         # Optional: Validate payload against TokenData schema

@@ -1,6 +1,7 @@
 import random
 import string
 from datetime import datetime, timedelta, timezone
+from typing import Optional, Dict, Any
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -35,7 +36,7 @@ def verify_otp(plain_otp: str, hashed_otp: str) -> bool:
     return pwd_context.verify(plain_otp, hashed_otp)
 
 # JWT Token Handling
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -53,7 +54,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 # Example decode function (will be part of dependencies.py usually)
-# def decode_access_token(token: str) -> dict | None:
+# def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
 #     try:
 #         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 #         return payload

@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from dotenv import load_dotenv
 
 # Construct the path to the .env file, assuming it's in the project root (farmpower_backend_v2)
@@ -21,15 +22,15 @@ class Settings:
         DATABASE_URL = "sqlite:///" + DATABASE_URL.split("sqlite")[-1].lstrip(":/\\")
 
     # JWT settings
-    SECRET_KEY: str | None = os.getenv("SECRET_KEY", "your-very-secret-key-that-should-be-in-env") # Default for safety, but should be in .env
+    SECRET_KEY: Optional[str] = os.getenv("SECRET_KEY", "your-very-secret-key-that-should-be-in-env") # Default for safety, but should be in .env
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
     # AWS S3 settings - with default fallbacks for local development
-    AWS_ACCESS_KEY_ID: str | None = os.getenv("AWS_ACCESS_KEY_ID", "dummy_access_key")
-    AWS_SECRET_ACCESS_KEY: str | None = os.getenv("AWS_SECRET_ACCESS_KEY", "dummy_secret_key")
-    AWS_S3_BUCKET_NAME: str | None = os.getenv("AWS_S3_BUCKET_NAME", "dummy-bucket-name")
-    AWS_S3_REGION_NAME: str | None = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
+    AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID", "dummy_access_key")
+    AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY", "dummy_secret_key")
+    AWS_S3_BUCKET_NAME: Optional[str] = os.getenv("AWS_S3_BUCKET_NAME", "dummy-bucket-name")
+    AWS_S3_REGION_NAME: Optional[str] = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
 
     # Example for other settings that might be added later
     # API_V1_STR: str = "/api/v1"

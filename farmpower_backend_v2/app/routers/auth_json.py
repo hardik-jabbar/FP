@@ -2,6 +2,7 @@
 Endpoint: POST /api/users/login
 """
 from datetime import timedelta, datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
@@ -32,7 +33,7 @@ async def json_login(
     db: Session = Depends(get_db),
 ):
     """Authenticate user via JSON body containing email and password."""
-    user: UserModel | None = user_service.get_user_by_email(db, email=credentials.email)
+    user: Optional[UserModel] = user_service.get_user_by_email(db, email=credentials.email)
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
