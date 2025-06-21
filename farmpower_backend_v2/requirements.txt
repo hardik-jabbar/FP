@@ -18,14 +18,14 @@ python-keycloak<3.0.0,>=2.10.0
 pydantic==2.6.1
 pydantic-settings==2.1.0
 
-# Supabase and related packages - pinned to compatible versions
-supabase==2.0.3
-gotrue==2.11.2
-postgrest-py==0.10.6
-realtime==2.2.0
+# Supabase and related packages - using compatible versions
+supabase>=2.0.0,<3.0.0
+gotrue>=2.0.0,<3.0.0
+postgrest-py>=0.10.0,<1.0.0
+realtime>=2.0.0,<3.0.0
 
-# HTTP Client
-httpx==0.24.1
+# HTTP Client - compatible with supabase
+httpx>=0.24.0,<0.25.0
 
 # Testing
 pytest==8.0.1
