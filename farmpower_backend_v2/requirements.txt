@@ -21,7 +21,7 @@ pydantic-settings==2.1.0
 # Supabase and related packages - pinned to specific versions that work together
 supabase==2.8.0
 gotrue==2.11.2
-postgrest-py==1.0.0
+postgrest-py==0.10.6  # Latest version available
 realtime==2.3.0
 httpx==0.27.0
 
