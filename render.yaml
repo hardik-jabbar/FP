@@ -2,11 +2,15 @@ services:
   - type: web
     name: farmpower-backend
     runtime: docker
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: |
+      cd farmpower_backend_v2 && \
+      pip install -r requirements.txt
+    startCommand: >-
+      cd farmpower_backend_v2 && \
+      uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.16
+        value: 3.11.0
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: ENVIRONMENT
@@ -17,10 +21,21 @@ services:
         fromDatabase:
           name: farmpower-db
           property: connectionString
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: ${NEXT_PUBLIC_SUPABASE_URL}
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: ${SUPABASE_SERVICE_ROLE_KEY}
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "*"
     plan: free
     numInstances: 1
     healthCheckPath: /docs
     autoDeploy: true
+    region: oregon  # Choose your preferred region
 
 databases:
   - name: farmpower-db

@@ -7,23 +7,35 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.11'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r farmpower_backend_v2/requirements.txt
       - name: Run tests
         run: |
+          cd farmpower_backend_v2
           python -m pytest
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Render CLI
+        run: |
+          curl -fsSL https://cli.render.com/install.sh | bash
       - name: Deploy to Render
-        uses: jasonetco/deploy-to-render@v1
+        run: |
+          render services deploy --yes
         env:
-          RENDER_SERVICE_NAME: farmpower-backend
-          RENDER_TOKEN: ${{ secrets.RENDER_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_CONFIG_FILE: render.yaml
