@@ -19,7 +19,7 @@ const app = express();
 
 // Configuration
 const staticDir = path.resolve(__dirname, '../../FARMPOWER');
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const HOST = process.env.HOST || '0.0.0.0';
 
