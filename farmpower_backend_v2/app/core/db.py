@@ -30,10 +30,31 @@ if not SQLALCHEMY_DATABASE_URL:
     sys.exit(1)
 
 def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
-    """Create a database engine with retry logic."""
+    """Create a database engine with retry logic and better error handling."""
     attempts = 0
     last_exception = None
     
+    # Log the database URL (masked) for debugging
+    db_url = SQLALCHEMY_DATABASE_URL
+    if '@' in db_url:
+        # Mask the password in the URL for logging
+        protocol_part = db_url.split('://')[0] + '://'
+        creds_and_rest = db_url.split('://', 1)[1]
+        if '@' in creds_and_rest:
+            creds_part, host_part = creds_and_rest.split('@', 1)
+            if ':' in creds_part:
+                username_part = creds_part.split(':', 1)[0]
+                masked_url = f"{protocol_part}{username_part}:***@{host_part}"
+            else:
+                masked_url = f"{protocol_part}***@{host_part}"
+        else:
+            masked_url = f"{protocol_part}***@{creds_and_rest}"
+    else:
+        masked_url = db_url
+    
+    logger.info(f"Creating database engine with URL (masked): {masked_url}")
+    
+    # Configure engine arguments
     engine_args = {
         "pool_pre_ping": True,  # Enable connection health checks
         "pool_recycle": 300,    # Recycle connections after 5 minutes
@@ -43,45 +64,65 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
         "echo": True,          # Log SQL queries (useful for debugging)
     }
 
-    
+
     # For SQLite, we need to add check_same_thread=False
-    if SQLALCHEMY_DATABASE_URL.startswith('sqlite'):
+    if db_url.startswith('sqlite'):
         engine_args["connect_args"] = {"check_same_thread": False}
     else:
         # For PostgreSQL, set a statement timeout
-        engine_args["connect_args"] = {"connect_timeout": 10, "options": "-c statement_timeout=30000"}
-    
-    # Log the database connection (but don't log credentials)
-    db_log = SQLALCHEMY_DATABASE_URL.split('@')[-1] if '@' in SQLALCHEMY_DATABASE_URL else SQLALCHEMY_DATABASE_URL
+        engine_args["connect_args"] = {
+            "connect_timeout": 10,
+            "options": "-c statement_timeout=30000"
+        }
     
     while attempts < max_retries:
         try:
-            logger.info(f"Attempt {attempts + 1}/{max_retries} - Connecting to database: {db_log}")
+            logger.info(f"Attempt {attempts + 1}/{max_retries} - Connecting to database")
             
             # Create the engine
-            engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_args)
+            engine = create_engine(db_url, **engine_args)
             
             # Test the connection with a simple query
             with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-                logger.info("Successfully connected to the database")
-                return engine
+                result = conn.execute(text("SELECT 1"))
+                if result.scalar() == 1:
+                    logger.info("✅ Successfully connected to the database")
+                    return engine
+                else:
+                    raise OperationalError("Test query did not return expected result", None, None)
                 
         except OperationalError as e:
             last_exception = e
-            logger.warning(f"Database connection attempt {attempts + 1} failed: {str(e)}")
+            logger.warning(f"⚠️ Database connection attempt {attempts + 1} failed: {str(e)}")
             if attempts < max_retries - 1:  # Don't sleep on the last attempt
-                time.sleep(retry_delay * (attempts + 1))  # Exponential backoff
+                wait_time = retry_delay * (attempts + 1)
+                logger.info(f"⏳ Waiting {wait_time} seconds before next attempt...")
+                time.sleep(wait_time)  # Exponential backoff
             attempts += 1
+            
         except Exception as e:
             last_exception = e
-            logger.error(f"Unexpected error connecting to the database: {str(e)}")
+            logger.error(f"❌ Unexpected error connecting to the database: {str(e)}")
+            logger.exception("Stack trace:")
             break
     
     # If we get here, all retries failed
-    error_msg = f"Failed to connect to the database after {max_retries} attempts. Last error: {str(last_exception)}"
+    error_msg = f"❌ Failed to connect to the database after {max_retries} attempts. " \
+               f"Last error: {str(last_exception)}\n" \
+               f"Database URL format: {masked_url}"
+    
     logger.error(error_msg)
-    print(error_msg, file=sys.stderr)
+    
+    # Provide more detailed error information
+    if "Invalid port" in str(last_exception):
+        logger.error("⚠️  Check if the port number is correct in your database URL")
+    if "password authentication failed" in str(last_exception).lower():
+        logger.error("⚠️  Check if the username and password are correct")
+    if "does not exist" in str(last_exception).lower():
+        logger.error("⚠️  Check if the database name is correct")
+    if "could not translate host name" in str(last_exception).lower():
+        logger.error("⚠️  Check if the database hostname is correct and accessible")
+    
     sys.exit(1)
 
 # Create the database engine
