@@ -33,7 +33,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import database and models using absolute imports
-from app.database import Base, engine
+from app.core.db import Base, engine
 # Import all models to ensure they are registered with Base
 from app import models
 
