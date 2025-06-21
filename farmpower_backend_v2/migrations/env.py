@@ -1,14 +1,18 @@
 import os
+import sys
 from logging.config import fileConfig
-from dotenv import load_dotenv
+from pathlib import Path
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Load environment variables from .env file
-load_dotenv()
+# Add the project root to the Python path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Import your SQLAlchemy models and database configuration
+from app.database import Base
+from app.core.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,27 +23,15 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-from models.base import Base
-target_metadata = Base.metadata
+# Set the SQLAlchemy URL from our settings
+config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
 
-def get_url():
-    # First, try to use DATABASE_URL from environment
-    database_url = os.getenv("DATABASE_URL")
-    if database_url:
-        return database_url
-        
-    # Check if we're in production (Railway)
-    if os.getenv("RAILWAY_ENVIRONMENT"):
-        return os.getenv("DATABASE_URL")
-    
-    # Check if we're using Supabase
-    if os.getenv("SUPABASE_DB_URL"):
-        return os.getenv("SUPABASE_DB_URL")
-    
-    # Fallback to SQLite for local development
-    return "sqlite:///./sql_app.db"
+# Import all SQLAlchemy models here for autogenerate support
+# This ensures all models are loaded and their tables are registered with Base.metadata
+from app import models  # noqa: F401
+
+# Set the metadata for the migrations
+target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -51,14 +43,15 @@ def run_migrations_offline() -> None:
 
     Calls to context.execute() here emit the given string to the
     script output.
-
     """
-    url = get_url()
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -69,19 +62,19 @@ def run_migrations_online() -> None:
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
-        configuration,
+        config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():

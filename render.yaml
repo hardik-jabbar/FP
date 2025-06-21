@@ -6,7 +6,15 @@ services:
       pip install -r /app/farmpower_backend_v2/requirements.txt
     startCommand: >-
       cd /app/farmpower_backend_v2 && \
-      uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers
+      uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*' --proxy-headers
+    
+    # Health check configuration
+    healthCheckPath: /health
+    
+    # Enable auto-deploy
+    autoDeploy: true
+    
+    # Environment variables
     envVars:
       # Server Configuration
       - key: HOST
@@ -15,6 +23,8 @@ services:
         value: "8000"
       - key: ENVIRONMENT
         value: production
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
       
       # Python Configuration
       - key: PYTHON_VERSION
@@ -47,6 +57,14 @@ services:
         value: "*"
       - key: ALLOWED_ORIGINS
         value: "https://your-frontend-domain.com,http://localhost:3000"
+      - key: SECURE_PROXY_SSL_HEADER
+        value: "('HTTP_X_FORWARDED_PROTO', 'https')"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: CSRF_COOKIE_SECURE
+        value: "true"
+      - key: SECURE_SSL_REDIRECT
+        value: "true"
       
       # Optional Settings
       - key: LOG_LEVEL
@@ -59,8 +77,6 @@ services:
         value: "5"
     plan: free
     numInstances: 1
-    healthCheckPath: /docs
-    autoDeploy: true
     region: oregon  # Choose your preferred region
 
 databases:

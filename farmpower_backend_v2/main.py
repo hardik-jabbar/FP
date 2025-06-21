@@ -1,11 +1,14 @@
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 import os
 import logging
-from typing import Dict, Any
+import re
+from typing import Dict, Any, List, Optional
 from middleware.rate_limit import rate_limit_middleware
 from dotenv import load_dotenv
 
@@ -43,13 +46,25 @@ from app.routers import marketplace
 # This is useful for development. For production, use migrations (e.g., Alembic).
 Base.metadata.create_all(bind=engine, checkfirst=True) # Ensures all imported models' tables are created
 
+# Security middleware for adding security headers
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # Security headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https: wss:; frame-ancestors 'none';"
+        return response
+
 # Initialize FastAPI app
 app = FastAPI(
     title="FarmPower API",
     description="FarmPower Backend API",
     version="1.0.0",
-    docs_url="/docs" if ENVIRONMENT != "production" else None,
-    redoc_url="/redoc" if ENVIRONMENT != "production" else None
+    docs_url="/docs" if os.getenv('ENVIRONMENT') != 'production' else None,
+    redoc_url="/redoc" if os.getenv('ENVIRONMENT') != 'production' else None
 )
 
 # Health check endpoint
@@ -74,18 +89,27 @@ logger.info(f"FARMPOWER directory: {farmpower_dir}")
 logger.info(f"Directory exists: {os.path.exists(farmpower_dir)}")
 
 # Configure CORS first - allow all origins
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", 
-    "http://localhost:3000,http://localhost:8000"
-).split(",")
+allowed_origins = [origin.strip() for origin in os.getenv('ALLOWED_ORIGINS', '').split(',') if origin.strip()]
+if not allowed_origins:
+    allowed_origins = ["http://localhost:3000"]  # Default for development
 
+# Add security middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["Content-Length", "X-Request-ID"],
+    max_age=600,  # 10 minutes
 )
+
+# Redirect HTTP to HTTPS in production
+if os.getenv('ENVIRONMENT') == 'production':
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 # Add rate limiting middleware
 app = rate_limit_middleware(app)

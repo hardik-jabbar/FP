@@ -13,7 +13,12 @@ from dotenv import load_dotenv
 load_dotenv() # Looks for .env in current working directory or parent directories
 
 class Settings:
-    DATABASE_URL: str | None = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/farmpower")
+    # Use SQLite by default for development
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
+    
+    # Ensure SQLite uses the correct connection string format
+    if DATABASE_URL.startswith("sqlite") and not DATABASE_URL.startswith("sqlite:///"):
+        DATABASE_URL = "sqlite:///" + DATABASE_URL.split("sqlite")[-1].lstrip(":/\\")
 
     # JWT settings
     SECRET_KEY: str | None = os.getenv("SECRET_KEY", "your-very-secret-key-that-should-be-in-env") # Default for safety, but should be in .env
