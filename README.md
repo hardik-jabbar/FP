@@ -11,13 +11,57 @@ FarmPower is a comprehensive digital solution designed to enhance farming operat
 - Seamless communication between users and service providers
 - AI-powered assistance for farming-related queries using Google's Generative AI
 
+## 🚀 Quick Start with Docker
+
+### Prerequisites
+- Docker and Docker Compose installed
+- Git (for cloning the repository)
+
+### Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd farmpower
+   ```
+
+2. **Start the services**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the services**
+   - Backend API: http://localhost:8000
+   - API Docs: http://localhost:8000/docs
+   - PostgreSQL: localhost:5432
+
+4. **View logs**
+   ```bash
+   docker-compose logs -f
+   ```
+
+### Frontend Development
+
+For frontend development, we recommend running the frontend separately:
+
+```bash
+cd FARMPOWER
+npm install
+npm run dev
+```
+
 ## Project Structure
 
 ```
 farmpower/
-├── frontend/                 # Frontend application
-│   ├── assets/              # Static assets (images, icons)
-│   ├── components/          # Reusable UI components
+├── farmpower_backend_v2/    # Backend API (FastAPI)
+│   ├── app/                # Application code
+│   ├── models/             # Database models
+│   └── requirements.txt    # Python dependencies
+│
+├── FARMPOWER/             # Frontend application (Vue.js/React)
+│   ├── assets/            # Static assets (images, icons)
+│   ├── components/        # Reusable UI components
 │   ├── scripts/             # JavaScript files
 │   └── templates/           # HTML templates
 ├── backend/                 # Backend application
