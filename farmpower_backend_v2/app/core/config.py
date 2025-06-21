@@ -1,25 +1,47 @@
 import os
+import urllib.parse
 from typing import Optional
 from dotenv import load_dotenv
 
-# Construct the path to the .env file, assuming it's in the project root (farmpower_backend_v2)
-# For this script, __file__ is farmpower_backend_v2/app/core/config.py
-# So, project_root is two levels up from this file's directory.
-# However, load_dotenv() by default looks for .env in the current working directory or its parents.
-# If the app runs from farmpower_backend_v2 as CWD, it should find .env.
-# For robustness, one could specify the path:
-# project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# load_dotenv(dotenv_path=os.path.join(project_dir, ".env"))
+load_dotenv()  # Looks for .env in current working directory or parent directories
 
-load_dotenv() # Looks for .env in current working directory or parent directories
+def get_database_url() -> str:
+    """Get and properly format the database URL with URL-encoded credentials."""
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
+    
+    # If it's a SQLite URL, ensure it's properly formatted
+    if db_url.startswith("sqlite"):
+        if not db_url.startswith("sqlite:///"):
+            db_url = "sqlite:///" + db_url.split("sqlite")[-1].lstrip(":/\\")
+        return db_url
+    
+    # For non-SQLite URLs, ensure proper URL encoding
+    if '://' in db_url:
+        # Parse the URL
+        from urllib.parse import urlparse, urlunparse
+        parsed = urlparse(db_url)
+        
+        # Rebuild the URL with encoded components
+        netloc = parsed.netloc
+        if '@' in netloc:
+            # Extract and encode the auth part
+            auth, host = netloc.split('@', 1)
+            if ':' in auth:
+                username, password = auth.split(':', 1)
+                # URL encode the username and password
+                username = urllib.parse.quote_plus(username)
+                password = urllib.parse.quote_plus(password)
+                auth = f"{username}:{password}"
+            netloc = f"{auth}@{host}"
+            
+        # Rebuild the URL
+        return urlunparse(parsed._replace(netloc=netloc))
+    
+    return db_url
 
 class Settings:
-    # Use SQLite by default for development
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
-    
-    # Ensure SQLite uses the correct connection string format
-    if DATABASE_URL.startswith("sqlite") and not DATABASE_URL.startswith("sqlite:///"):
-        DATABASE_URL = "sqlite:///" + DATABASE_URL.split("sqlite")[-1].lstrip(":/\\")
+    # Get the properly formatted database URL
+    DATABASE_URL: str = get_database_url()
 
     # JWT settings
     SECRET_KEY: Optional[str] = os.getenv("SECRET_KEY", "your-very-secret-key-that-should-be-in-env") # Default for safety, but should be in .env
