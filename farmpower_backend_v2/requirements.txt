@@ -19,10 +19,11 @@ pydantic==2.6.1
 pydantic-settings==2.1.0
 
 # Supabase
-supabase>=2.0.0,<3.0.0
-gotrue>=2.0.0,<3.0.0
-postgrest-py>=1.0.0,<2.0.0
-realtime>=2.0.0,<3.0.0
+# Using specific versions that are known to work together
+supabase==2.3.5
+gotrue==2.10.0
+postgrest-py==0.10.6
+realtime==2.3.0
 
 # HTTP Client
 httpx==0.26.0
