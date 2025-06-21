@@ -15,8 +15,9 @@ python-multipart>=0.0.9
 python-keycloak>=2.16.6
 
 # Pydantic
-pydantic>=2.6.1
+pydantic[email]>=2.6.1
 pydantic-settings>=2.1.0
+email-validator>=2.1.0
 
 # Supabase and related packages - pinned to specific compatible versions
 # Using postgrest instead of postgrest-py for better httpx compatibility
