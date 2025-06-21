@@ -32,24 +32,24 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Import database and models using relative imports
-from .app.database import Base, engine
+# Import database and models using absolute imports
+from app.database import Base, engine
 # Import all models to ensure they are registered with Base
-from .app import models
+from app import models
 
-# Import all routers using relative imports
-from .app.routers import users as user_router
-from .app.routers import tractors as tractor_router
-from .app.routers import fields as field_router
-from .app.routers import crops as crop_router
-from .app.routers import services as service_booking_router
-from .app.routers import parts as part_router
-from .app.routers import notifications as notification_router
-from .app.routers import messages as message_router
-from .app.routers import admin as admin_router
-from .app.routers import crop_calculator as crop_calculator_router
-from .app.routers import auth_json as auth_json_router
-from .app.routers import marketplace
+# Import all routers using absolute imports
+from app.routers import users as user_router
+from app.routers import tractors as tractor_router
+from app.routers import fields as field_router
+from app.routers import crops as crop_router
+from app.routers import services as service_booking_router
+from app.routers import parts as part_router
+from app.routers import notifications as notification_router
+from app.routers import messages as message_router
+from app.routers import admin as admin_router
+from app.routers import crop_calculator as crop_calculator_router
+from app.routers import auth_json as auth_json_router
+from app.routers import marketplace
 
 # Create database tables (if they don't exist yet)
 # This is useful for development. For production, use migrations (e.g., Alembic).

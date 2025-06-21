@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from .core.config import settings  # Import settings
+from app.core.config import settings  # Import settings
 import sys
 
 # Use the database URL from settings, with a fallback for safety
