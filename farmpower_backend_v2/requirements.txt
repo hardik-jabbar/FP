@@ -12,18 +12,17 @@ psycopg2-binary==2.9.9
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
-python-keycloak>=2.10.0,<3.0.0  # Using a version range for better compatibility
+python-keycloak<3.0.0,>=2.10.0
 
 # Data Validation
 pydantic==2.6.1
 pydantic-settings==2.1.0
 
-# Supabase
-# Using specific versions that are known to work together
-supabase==2.3.5
-gotrue==2.10.0
-postgrest-py==0.10.6
-realtime==2.3.0
+# Supabase and related packages - pinned to compatible versions
+supabase==1.0.3
+gotrue==1.0.0
+postgrest-py==0.10.4
+realtime==1.0.1
 
 # HTTP Client
 httpx==0.26.0
