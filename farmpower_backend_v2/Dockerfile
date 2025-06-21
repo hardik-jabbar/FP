@@ -14,7 +14,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install Python dependencies
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY setup.py .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install -e .
 
 # ===== RUNTIME STAGE =====
 FROM python:3.10-slim

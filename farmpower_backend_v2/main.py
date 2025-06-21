@@ -9,7 +9,7 @@ import os
 import logging
 import re
 from typing import Dict, Any, List, Optional
-from middleware.rate_limit import rate_limit_middleware
+from farmpower_backend_v2.middleware.rate_limit import rate_limit_middleware
 from dotenv import load_dotenv
 
 # Load environment variables
