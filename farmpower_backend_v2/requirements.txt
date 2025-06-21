@@ -19,10 +19,10 @@ pydantic>=2.6.1
 pydantic-settings>=2.1.0
 
 # Supabase and related packages - pinned to specific compatible versions
-# supabase 2.15.x requires realtime>=2.4.0,<2.5.0 and httpx>=0.26,<0.29
+# Using postgrest instead of postgrest-py for better httpx compatibility
 supabase>=2.15.0,<2.16.0
 gotrue>=2.11.4,<3.0.0
-postgrest-py>=0.10.6,<0.11.0
+postgrest>=1.0.0,<2.0.0  # Using the newer postgrest package
 realtime>=2.4.0,<2.5.0
 httpx>=0.26.0,<0.29.0
 
