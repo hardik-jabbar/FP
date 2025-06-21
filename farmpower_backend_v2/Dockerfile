@@ -1,5 +1,5 @@
 # ===== BUILD STAGE =====
-FROM python:3.13-slim as builder
+FROM python:3.11-slim as builder
 
 # Install system build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,7 +17,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ===== RUNTIME STAGE =====
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
