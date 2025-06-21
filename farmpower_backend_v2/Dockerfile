@@ -1,57 +1,32 @@
-# ===== BUILD STAGE =====
-FROM python:3.10-slim as builder
+# Use Python 3.10 slim image
+FROM python:3.10-slim
 
-# Install system build dependencies
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app \
+    PORT=8000 \
+    HOST=0.0.0.0
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and activate virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
 
 # Install Python dependencies
-WORKDIR /app
-COPY requirements.txt .
-COPY setup.py .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install -e .
-
-# ===== RUNTIME STAGE =====
-FROM python:3.10-slim
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Set up application directory
-WORKDIR /app
-
-# Copy setup files first to leverage Docker cache
-COPY setup.py .
-COPY README.md .
-COPY MANIFEST.in .
-COPY requirements.txt .
-
-# Install the package in development mode
-RUN pip install -e .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app:${PYTHONPATH}
-ENV PORT=8000
-ENV HOST=0.0.0.0
-
-# Run as non-root user for security
+# Create a non-root user and switch to it
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
@@ -62,5 +37,8 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
   CMD curl -f http://$HOST:$PORT/health || exit 1
 
+# Make run.py executable
+RUN chmod +x run.py
+
 # Run the application
-CMD ["sh", "-c", "uvicorn main:app --host $HOST --port $PORT --proxy-headers"] 
+CMD ["python", "run.py"]

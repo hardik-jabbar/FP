@@ -1,3 +1,10 @@
+import os
+import sys
+import logging
+import re
+from typing import Dict, Any, List, Optional
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Request, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
@@ -5,12 +12,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
-import os
-import logging
-import re
-from typing import Dict, Any, List, Optional
-from farmpower_backend_v2.middleware.rate_limit import rate_limit_middleware
 from dotenv import load_dotenv
+
+# Add the current directory to the Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import rate limit middleware after modifying sys.path
+from middleware.rate_limit import rate_limit_middleware
 
 # Load environment variables
 load_dotenv()
@@ -24,23 +32,24 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from app.database import Base, engine
-# Import all models from the models package to ensure they are registered with Base
-from app import models
+# Import database and models using relative imports
+from .app.database import Base, engine
+# Import all models to ensure they are registered with Base
+from .app import models
 
-# Import all routers
-from app.routers import users as user_router
-from app.routers import tractors as tractor_router
-from app.routers import fields as field_router
-from app.routers import crops as crop_router
-from app.routers import services as service_booking_router
-from app.routers import parts as part_router
-from app.routers import notifications as notification_router
-from app.routers import messages as message_router
-from app.routers import admin as admin_router
-from app.routers import crop_calculator as crop_calculator_router
-from app.routers import auth_json as auth_json_router
-from app.routers import marketplace
+# Import all routers using relative imports
+from .app.routers import users as user_router
+from .app.routers import tractors as tractor_router
+from .app.routers import fields as field_router
+from .app.routers import crops as crop_router
+from .app.routers import services as service_booking_router
+from .app.routers import parts as part_router
+from .app.routers import notifications as notification_router
+from .app.routers import messages as message_router
+from .app.routers import admin as admin_router
+from .app.routers import crop_calculator as crop_calculator_router
+from .app.routers import auth_json as auth_json_router
+from .app.routers import marketplace
 
 # Create database tables (if they don't exist yet)
 # This is useful for development. For production, use migrations (e.g., Alembic).
