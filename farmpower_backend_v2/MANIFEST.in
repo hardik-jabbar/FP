@@ -1,0 +1,9 @@
+include README.md
+include requirements.txt
+include *.ini
+recursive-include app *
+recursive-include middleware *
+recursive-include models *
+recursive-include schemas *
+recursive-include routers *
+recursive-include tests *

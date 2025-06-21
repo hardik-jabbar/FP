@@ -33,12 +33,21 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Set up application directory
 WORKDIR /app
 
-# Copy application code
+# Copy setup files first to leverage Docker cache
+COPY setup.py .
+COPY README.md .
+COPY MANIFEST.in .
+COPY requirements.txt .
+
+# Install the package in development mode
+RUN pip install -e .
+
+# Copy the rest of the application
 COPY . .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:${PYTHONPATH}
 ENV PORT=8000
 ENV HOST=0.0.0.0
 
