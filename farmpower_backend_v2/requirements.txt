@@ -23,7 +23,7 @@ pydantic-settings==2.1.0
 supabase==2.3.5
 gotrue==2.11.4
 postgrest-py==0.10.6
-realtime==1.1.1
+realtime==2.5.1
 httpx==0.24.1
 
 # Testing

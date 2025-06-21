@@ -1,12 +1,21 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import os
 import logging
+from typing import Dict, Any
 from middleware.rate_limit import rate_limit_middleware
 from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Get configuration from environment variables
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -34,15 +43,26 @@ from app.routers import marketplace
 # This is useful for development. For production, use migrations (e.g., Alembic).
 Base.metadata.create_all(bind=engine, checkfirst=True) # Ensures all imported models' tables are created
 
-# Load environment variables
-load_dotenv()
-
 # Initialize FastAPI app
 app = FastAPI(
     title="FarmPower API",
     description="FarmPower Backend API",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs" if ENVIRONMENT != "production" else None,
+    redoc_url="/redoc" if ENVIRONMENT != "production" else None
 )
+
+# Health check endpoint
+@app.get("/health", response_model=Dict[str, Any])
+async def health_check() -> Dict[str, Any]:
+    """Health check endpoint for monitoring and container orchestration."""
+    return {
+        "status": "healthy",
+        "environment": ENVIRONMENT,
+        "host": HOST,
+        "port": PORT,
+        "debug": ENVIRONMENT == "development"
+    }
 
 # Get the absolute path to the 'FARMPOWER' directory
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -53,13 +73,15 @@ logger.info(f"Project root: {project_root}")
 logger.info(f"FARMPOWER directory: {farmpower_dir}")
 logger.info(f"Directory exists: {os.path.exists(farmpower_dir)}")
 
-# Configure CORS first - allow all origins for development
+# Configure CORS first - allow all origins
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:3000,http://localhost:8000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        os.getenv("FRONTEND_URL", "http://localhost:3000"),
-        "http://localhost:5500",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

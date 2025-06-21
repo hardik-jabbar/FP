@@ -170,3 +170,4 @@ FARMPOWER/assets/images/**
 FARMPOWER/assets/images/GitHubDesktop-arm64.zip
 FARMPOWER/assets/images/GitHub Desktop.app/
 .DS_Store
+sql_app.db
