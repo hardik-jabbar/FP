@@ -32,10 +32,44 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # Import database and models using absolute imports
-from app.core.db import Base, engine
-# Import all models to ensure they are registered with Base
-from app import models
+try:
+    from app.core.db import Base, engine, SessionLocal
+    # Import all models to ensure they are registered with Base
+    from app import models
+    
+    # Test database connection
+    try:
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        db.close()
+        logger.info("✅ Database connection test successful")
+    except Exception as e:
+        logger.error(f"❌ Database connection test failed: {str(e)}")
+        # Don't exit here, let the application start so we can see other errors
+        
+except ImportError as e:
+    logger.error(f"❌ Failed to import database modules: {str(e)}")
+    raise
+
+# Ensure the database tables are created
+try:
+    logger.info("Creating database tables...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("✅ Database tables created/verified")
+except Exception as e:
+    logger.error(f"❌ Failed to create database tables: {str(e)}")
+    raise
 
 # Import all routers using absolute imports
 from app.routers import users as user_router

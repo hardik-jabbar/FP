@@ -1,16 +1,23 @@
 import logging
 import sys
-from typing import Generator
+import time
+from typing import Generator, Optional
 
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
 from app.core.config import settings
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Get the database URL from settings
@@ -22,36 +29,63 @@ if not SQLALCHEMY_DATABASE_URL:
     print(error_msg, file=sys.stderr)
     sys.exit(1)
 
-# Configure the database engine with connection pooling and timeouts
-try:
+def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
+    """Create a database engine with retry logic."""
+    attempts = 0
+    last_exception = None
+    
     engine_args = {
         "pool_pre_ping": True,  # Enable connection health checks
         "pool_recycle": 300,    # Recycle connections after 5 minutes
         "pool_timeout": 30,     # Wait up to 30 seconds for a connection from the pool
         "max_overflow": 20,     # Allow up to 20 connections beyond pool_size
         "pool_size": 5,         # Maintain up to 5 persistent connections
+        "echo": True,          # Log SQL queries (useful for debugging)
     }
 
+    
     # For SQLite, we need to add check_same_thread=False
     if SQLALCHEMY_DATABASE_URL.startswith('sqlite'):
         engine_args["connect_args"] = {"check_same_thread": False}
+    else:
+        # For PostgreSQL, set a statement timeout
+        engine_args["connect_args"] = {"connect_timeout": 10, "options": "-c statement_timeout=30000"}
     
     # Log the database connection (but don't log credentials)
     db_log = SQLALCHEMY_DATABASE_URL.split('@')[-1] if '@' in SQLALCHEMY_DATABASE_URL else SQLALCHEMY_DATABASE_URL
-    logger.info(f"Connecting to database: {db_log}")
     
-    # Create the engine
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_args)
+    while attempts < max_retries:
+        try:
+            logger.info(f"Attempt {attempts + 1}/{max_retries} - Connecting to database: {db_log}")
+            
+            # Create the engine
+            engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_args)
+            
+            # Test the connection with a simple query
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+                logger.info("Successfully connected to the database")
+                return engine
+                
+        except OperationalError as e:
+            last_exception = e
+            logger.warning(f"Database connection attempt {attempts + 1} failed: {str(e)}")
+            if attempts < max_retries - 1:  # Don't sleep on the last attempt
+                time.sleep(retry_delay * (attempts + 1))  # Exponential backoff
+            attempts += 1
+        except Exception as e:
+            last_exception = e
+            logger.error(f"Unexpected error connecting to the database: {str(e)}")
+            break
     
-    # Test the connection
-    with engine.connect() as conn:
-        logger.info("Successfully connected to the database")
-        
-except Exception as e:
-    error_msg = f"Failed to connect to the database: {str(e)}"
+    # If we get here, all retries failed
+    error_msg = f"Failed to connect to the database after {max_retries} attempts. Last error: {str(last_exception)}"
     logger.error(error_msg)
     print(error_msg, file=sys.stderr)
     sys.exit(1)
+
+# Create the database engine
+engine = create_db_engine()
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

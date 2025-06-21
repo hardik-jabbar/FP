@@ -18,24 +18,35 @@ def get_database_url() -> str:
     # For non-SQLite URLs, ensure proper URL encoding
     if '://' in db_url:
         # Parse the URL
-        from urllib.parse import urlparse, urlunparse
-        parsed = urlparse(db_url)
+        from urllib.parse import urlparse, urlunparse, quote_plus, quote
         
-        # Rebuild the URL with encoded components
-        netloc = parsed.netloc
-        if '@' in netloc:
-            # Extract and encode the auth part
-            auth, host = netloc.split('@', 1)
-            if ':' in auth:
-                username, password = auth.split(':', 1)
-                # URL encode the username and password
-                username = urllib.parse.quote_plus(username)
-                password = urllib.parse.quote_plus(password)
-                auth = f"{username}:{password}"
-            netloc = f"{auth}@{host}"
-            
-        # Rebuild the URL
-        return urlunparse(parsed._replace(netloc=netloc))
+        # Handle special case for Supabase URL format
+        if 'supabase' in db_url.lower():
+            # Extract the connection string part after 'postgresql://'
+            if 'postgresql://' in db_url:
+                parts = db_url.split('postgresql://', 1)
+                if len(parts) > 1:
+                    creds_and_host = parts[1]
+                    if '@' in creds_and_host:
+                        creds, host = creds_and_host.split('@', 1)
+                        if ':' in creds:
+                            username, password = creds.split(':', 1)
+                            # Properly encode username and password
+                            username = quote_plus(username)
+                            password = quote_plus(password)
+                            # Rebuild the URL with encoded credentials
+                            db_url = f"postgresql://{username}:{password}@{host}"
+        else:
+            # Handle standard PostgreSQL URLs
+            parsed = urlparse(db_url)
+            if parsed.password or parsed.username:
+                # If URL already has credentials, ensure they're properly encoded
+                username = quote_plus(parsed.username or '')
+                password = quote_plus(parsed.password or '')
+                hostname = parsed.hostname or ''
+                port = f":{parsed.port}" if parsed.port else ""
+                netloc = f"{username}:{password}@{hostname}{port}" if password else f"{username}@{hostname}{port}"
+                db_url = urlunparse(parsed._replace(netloc=netloc))
     
     return db_url
 
