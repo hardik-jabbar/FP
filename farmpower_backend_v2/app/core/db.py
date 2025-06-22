@@ -45,10 +45,13 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     SUPABASE_HOST = "db.fmqxdoocmapllbuecblc.supabase.co"
     SUPABASE_PORT = 5432
     
-    # SSL context for secure connection
+    # Force IPv4 by default
+    socket.AF_INET6 = socket.AF_INET
+    
+    # Configure SSL context
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_REQUIRED
+    ssl_context.verify_mode = ssl.CERT_NONE  # Disable certificate verification temporarily for testing
     
     # Parse the database URL to modify connection parameters
     parsed_url = urlparse(db_url)
@@ -104,47 +107,72 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
         if "supabase.co" in host:
             logger.info("Supabase host detected, configuring direct connection")
             
-            # Use the known Supabase host and port
-            host = SUPABASE_HOST
-            port = SUPABASE_PORT
+            # Resolve host to IPv4
+            try:
+                host_info = socket.getaddrinfo(SUPABASE_HOST, SUPABASE_PORT, 
+                                             family=socket.AF_INET,  # Force IPv4
+                                             type=socket.SOCK_STREAM)
+                if host_info:
+                    ipv4_address = host_info[0][4][0]
+                    logger.info(f"Resolved {SUPABASE_HOST} to IPv4: {ipv4_address}")
+                    host = ipv4_address
+                    port = SUPABASE_PORT
+                else:
+                    logger.warning(f"Could not resolve {SUPABASE_HOST} to IPv4, using original host")
+                    host = SUPABASE_HOST
+            except Exception as e:
+                logger.warning(f"Error resolving {SUPABASE_HOST} to IPv4: {e}, using original host")
+                host = SUPABASE_HOST
             
-            # Add connection parameters for Supabase with SSL
+            # Build connection parameters
             connection_params = [
                 f"host={host}",
                 f"port={port}",
                 "sslmode=require",
-                "sslrootcert=~/.postgresql/root.crt",
-                "connect_timeout=30",
+                "connect_timeout=10",
                 "keepalives=1",
                 "keepalives_idle=30",
                 "keepalives_interval=10",
                 "keepalives_count=5",
-                "options=-c statement_timeout=60000"
+                "target_session_attrs=read-write"
             ]
             
-            # Build connection string without host in the URL
-            connection_string = f"postgresql://{parsed_url.username}:{parsed_url.password}@?{'&'.join(connection_params)}&dbname={parsed_url.path.lstrip('/')}"
+            # Build connection string
+            connection_string = f"postgresql://{parsed_url.username}:{parsed_url.password}@{host}:{port}/{parsed_url.path.lstrip('/')}?{'&'.join(connection_params[2:])}"
             logger.info(f"Using direct Supabase connection to {host}:{port}")
             
-            # Return early with the direct connection string
-            db_url = connection_string
-            logger.info(f"Connection string (masked): postgresql://{parsed_url.username}:***@?{'&'.join([p for p in connection_params if not p.startswith('password')])}")
+            # Log masked connection string (without password)
+            logger.info(f"Connection string (masked): postgresql://{parsed_url.username}:***@{host}:{port}/{parsed_url.path.lstrip('/')}?{'&'.join(connection_params[2:])}")
             
-            # Create the engine with the direct connection string
+            # Create the engine with explicit connection args
             logger.info(f"Creating engine with direct connection to {host}:{port}")
-            engine = create_engine(db_url, connect_args={"sslmode": "require"}, **engine_args)
+            engine = create_engine(
+                connection_string,
+                connect_args={
+                    "sslmode": "require",
+                    "sslrootcert": None,  # Use system CA
+                    "target_session_attrs": "read-write"
+                },
+                **engine_args
+            )
             
-            # Test the connection
-            try:
-                with engine.connect() as conn:
-                    result = conn.execute(text("SELECT 1"))
-                    if result.scalar() == 1:
-                        logger.info("✅ Successfully connected to the database")
-                        return engine
-            except Exception as e:
-                logger.error(f"❌ Failed to connect to database: {e}")
-                raise
-                
+            # Test the connection with retry logic
+            while attempts < max_retries:
+                try:
+                    with engine.connect() as conn:
+                        result = conn.execute(text("SELECT 1"))
+                        if result.scalar() == 1:
+                            logger.info("✅ Successfully connected to the database")
+                            return engine
+                except Exception as e:
+                    attempts += 1
+                    logger.warning(f"⚠️ Connection attempt {attempts}/{max_retries} failed: {e}")
+                    if attempts < max_retries:
+                        time.sleep(retry_delay * (2 ** (attempts - 1)))  # Exponential backoff
+                    else:
+                        logger.error(f"❌ Failed to connect to database after {max_retries} attempts")
+                        raise
+                        
             return engine
         else:
             # For non-Supabase hosts, try to resolve to IPv4
