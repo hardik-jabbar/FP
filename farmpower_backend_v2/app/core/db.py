@@ -31,24 +31,24 @@ if not SQLALCHEMY_DATABASE_URL:
 
 def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     """Create a database engine with retry logic and better error handling."""
+    import socket
+    from urllib.parse import urlparse, urlunparse
+    
     attempts = 0
     last_exception = None
     
     # Log the database URL (masked) for debugging
     db_url = SQLALCHEMY_DATABASE_URL
-    if '@' in db_url:
-        # Mask the password in the URL for logging
-        protocol_part = db_url.split('://')[0] + '://'
-        creds_and_rest = db_url.split('://', 1)[1]
-        if '@' in creds_and_rest:
-            creds_part, host_part = creds_and_rest.split('@', 1)
-            if ':' in creds_part:
-                username_part = creds_part.split(':', 1)[0]
-                masked_url = f"{protocol_part}{username_part}:***@{host_part}"
-            else:
-                masked_url = f"{protocol_part}***@{host_part}"
-        else:
-            masked_url = f"{protocol_part}***@{creds_and_rest}"
+    
+    # Parse the database URL to modify connection parameters
+    parsed_url = urlparse(db_url)
+    
+    # Mask the password in the URL for logging
+    if parsed_url.password:
+        netloc = f"{parsed_url.username}:***@{parsed_url.hostname}"
+        if parsed_url.port:
+            netloc += f":{parsed_url.port}"
+        masked_url = urlunparse(parsed_url._replace(netloc=netloc))
     else:
         masked_url = db_url
     
@@ -69,24 +69,69 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     if db_url.startswith('sqlite'):
         engine_args["connect_args"] = {"check_same_thread": False}
     else:
-        # For PostgreSQL, set a statement timeout
-        engine_args["connect_args"] = {
-            "connect_timeout": 10,
-            "options": "-c statement_timeout=30000"
+        # For PostgreSQL, set connection parameters
+        connect_args = {
+            "connect_timeout": 30,  # Increased timeout for initial connection
+            "options": "-c statement_timeout=60000 -c idle_in_transaction_session_timeout=30000",
+            "keepalives": 1,  # Enable keepalive
+            "keepalives_idle": 30,  # Idle time before sending keepalive
+            "keepalives_interval": 10,  # Interval between keepalives
+            "keepalives_count": 5,  # Number of keepalive failures before closing
+            "sslmode": "require"  # Ensure SSL is used
         }
+        
+        # Parse the hostname and handle IPv4/IPv6
+        host = parsed_url.hostname
+        
+        # Only try to resolve if it's not an IP address
+        if not (host.replace('.', '').isdigit() or ':' in host):
+            try:
+                # Try to get IPv4 address
+                host_info = socket.getaddrinfo(host, None, socket.AF_INET)
+                if host_info:
+                    host = host_info[0][4][0]  # Get the first IPv4 address
+                    logger.info(f"Resolved {parsed_url.hostname} to IPv4: {host}")
+                else:
+                    logger.warning(f"No IPv4 address found for {host}, using original hostname")
+            except (socket.gaierror, socket.error) as e:
+                logger.warning(f"Failed to resolve {host} to IPv4, using original hostname: {e}")
+        
+        # URL encode username and password
+        from urllib.parse import quote_plus
+        username = quote_plus(parsed_url.username or '')
+        password = quote_plus(parsed_url.password or '')
+        
+        # Rebuild the URL with the resolved host and encoded credentials
+        netloc = f"{username}:{password}@{host}"
+        if parsed_url.port:
+            netloc += f":{parsed_url.port}"
+            
+        db_url = urlunparse(parsed_url._replace(netloc=netloc))
+        logger.info(f"Using database URL with resolved host: {db_url.split('@')[-1]}")
+        
+        engine_args["connect_args"] = connect_args
     
     while attempts < max_retries:
         try:
             logger.info(f"Attempt {attempts + 1}/{max_retries} - Connecting to database")
             
-            # Create the engine
+            # Rebuild the URL with the current host
+            db_url = urlunparse(parsed_url._replace(netloc=netloc))
+            
+            # Log the masked URL (without password)
+            safe_netloc = netloc.split('@')[-1]  # Remove credentials for logging
+            logger.info(f"Connecting to: {parsed_url.scheme}://...@{safe_netloc}")
+            
+            # Create the engine with updated URL
             engine = create_engine(db_url, **engine_args)
             
             # Test the connection with a simple query
             with engine.connect() as conn:
+                logger.info("Testing database connection...")
                 result = conn.execute(text("SELECT 1"))
                 if result.scalar() == 1:
                     logger.info("✅ Successfully connected to the database")
+                    logger.info(f"Database version: {conn.dialect.server_version_info}")
                     return engine
                 else:
                     raise OperationalError("Test query did not return expected result", None, None)
@@ -95,16 +140,24 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
             last_exception = e
             logger.warning(f"⚠️ Database connection attempt {attempts + 1} failed: {str(e)}")
             if attempts < max_retries - 1:  # Don't sleep on the last attempt
-                wait_time = retry_delay * (attempts + 1)
+                wait_time = retry_delay * (2 ** attempts)  # Exponential backoff
                 logger.info(f"⏳ Waiting {wait_time} seconds before next attempt...")
-                time.sleep(wait_time)  # Exponential backoff
+                time.sleep(wait_time)
             attempts += 1
             
+            # If this is the last attempt, try one more time with direct IP if possible
+            if attempts == max_retries - 1 and 'hostname' in locals() and host != parsed_url.hostname:
+                logger.info("Trying one more time with direct IP connection...")
+                netloc = netloc.replace(parsed_url.hostname, host)
+                
         except Exception as e:
             last_exception = e
             logger.error(f"❌ Unexpected error connecting to the database: {str(e)}")
             logger.exception("Stack trace:")
-            break
+            if attempts < max_retries - 1:
+                wait_time = retry_delay * (2 ** attempts)
+                time.sleep(wait_time)
+            attempts += 1
     
     # If we get here, all retries failed
     error_msg = f"❌ Failed to connect to the database after {max_retries} attempts. " \
