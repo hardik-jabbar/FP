@@ -32,6 +32,7 @@ if not SQLALCHEMY_DATABASE_URL:
 def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     """Create a database engine with retry logic and better error handling."""
     import socket
+    import ssl
     from urllib.parse import urlparse, urlunparse, quote_plus, unquote, parse_qs, urlencode
     
     attempts = 0
@@ -39,6 +40,15 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     
     # Log the database URL (masked) for debugging
     db_url = SQLALCHEMY_DATABASE_URL
+    
+    # Known Supabase host and port
+    SUPABASE_HOST = "db.fmqxdoocmapllbuecblc.supabase.co"
+    SUPABASE_PORT = 5432
+    
+    # SSL context for secure connection
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_REQUIRED
     
     # Parse the database URL to modify connection parameters
     parsed_url = urlparse(db_url)
@@ -90,27 +100,52 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
         # Parse the hostname and handle IPv4/IPv6
         host = parsed_url.hostname
         
-        # For Supabase, use the connection pooler
+        # For Supabase, use direct connection with SSL
         if "supabase.co" in host:
-            logger.info("Supabase host detected, configuring connection pooler")
-            # Extract the project reference from the hostname (db.xxx.supabase.co -> xxx)
-            project_ref = host.split('.')[1]
-            # Use the Supabase connection pooler
-            host = f"aws-0-{project_ref}.pooler.supabase.com"
-            logger.info(f"Using Supabase connection pooler: {host}")
+            logger.info("Supabase host detected, configuring direct connection")
             
-            # Add connection parameters for Supabase
+            # Use the known Supabase host and port
+            host = SUPABASE_HOST
+            port = SUPABASE_PORT
+            
+            # Add connection parameters for Supabase with SSL
             connection_params = [
-                "connect_timeout=30",
+                f"host={host}",
+                f"port={port}",
                 "sslmode=require",
-                "options=--application_name=render_app",
+                "sslrootcert=~/.postgresql/root.crt",
+                "connect_timeout=30",
                 "keepalives=1",
                 "keepalives_idle=30",
                 "keepalives_interval=10",
                 "keepalives_count=5",
                 "options=-c statement_timeout=60000"
             ]
-            host = f"{host}?{'&'.join(connection_params)}"
+            
+            # Build connection string without host in the URL
+            connection_string = f"postgresql://{parsed_url.username}:{parsed_url.password}@?{'&'.join(connection_params)}&dbname={parsed_url.path.lstrip('/')}"
+            logger.info(f"Using direct Supabase connection to {host}:{port}")
+            
+            # Return early with the direct connection string
+            db_url = connection_string
+            logger.info(f"Connection string (masked): postgresql://{parsed_url.username}:***@?{'&'.join([p for p in connection_params if not p.startswith('password')])}")
+            
+            # Create the engine with the direct connection string
+            logger.info(f"Creating engine with direct connection to {host}:{port}")
+            engine = create_engine(db_url, connect_args={"sslmode": "require"}, **engine_args)
+            
+            # Test the connection
+            try:
+                with engine.connect() as conn:
+                    result = conn.execute(text("SELECT 1"))
+                    if result.scalar() == 1:
+                        logger.info("✅ Successfully connected to the database")
+                        return engine
+            except Exception as e:
+                logger.error(f"❌ Failed to connect to database: {e}")
+                raise
+                
+            return engine
         else:
             # For non-Supabase hosts, try to resolve to IPv4
             try:
@@ -171,10 +206,9 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
                 base_netloc = netloc_parts[0]
                 query = netloc_parts[1] if len(netloc_parts) > 1 else ''
                 
-                # For Supabase, ensure we're using the correct port (6543 for connection pooler)
-                if "pooler.supabase.com" in base_netloc:
-                    if ":" not in base_netloc:  # Only add port if not already specified
-                        base_netloc = f"{base_netloc}:6543"
+                # For Supabase, ensure we're using the correct port
+                if "supabase.co" in base_netloc and ":" not in base_netloc:
+                    base_netloc = f"{base_netloc}:{SUPABASE_PORT}"
                 
                 # Reconstruct the URL with proper query parameters
                 if query:
@@ -182,23 +216,18 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
                 else:
                     db_url = f"{parsed_url.scheme}://{base_netloc}"
                 
-                # Log the masked URL (without password)
-                safe_netloc = base_netloc.split('@')[-1]  # Remove credentials for logging
-                logger.info(f"Connecting to: {parsed_url.scheme}://...@{safe_netloc}")
-                
-                # Log the actual URL being used (masked)
+                # Log connection details (masked)
                 if '@' in db_url:
-                    # Mask the password in the URL
-                    scheme_netloc, path = db_url.split('@', 1)
-                    if '://' in scheme_netloc:
-                        scheme, auth = scheme_netloc.split('://', 1)
-                        if ':' in auth:
-                            user = auth.split(':', 1)[0]
-                            masked_url = f"{scheme}://{user}:***@{path}"
-                            logger.debug(f"Full connection URL (masked): {masked_url}")
-                
-                # Log the actual URL being used for debugging (without password)
-                logger.debug(f"Connection string: {db_url.split('@')[0]}@[MASKED]@{db_url.split('@')[1] if '@' in db_url else ''}")
+                    # For direct connection strings, mask the password
+                    if '://' in db_url and '@' in db_url:
+                        scheme_rest = db_url.split('://', 1)
+                        auth_host = scheme_rest[1].split('@', 1)
+                        if len(auth_host) > 1 and ':' in auth_host[0]:
+                            user = auth_host[0].split(':', 1)[0]
+                            masked_url = f"{scheme_rest[0]}://{user}:***@{auth_host[1]}"
+                            logger.info(f"Connecting to: {masked_url}")
+                else:
+                    logger.info(f"Connecting to: {db_url}")
                 
                 # Create the engine with updated URL
                 logger.info(f"Creating engine with URL: {parsed_url.scheme}://...@{safe_netloc}")
