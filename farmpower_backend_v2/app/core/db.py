@@ -45,8 +45,28 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     SUPABASE_HOST = "db.fmqxdoocmapllbuecblc.supabase.co"
     SUPABASE_PORT = 5432
     
-    # Force IPv4 by default
-    socket.AF_INET6 = socket.AF_INET
+    # Force IPv4 by patching the socket module
+    import socket
+    
+    # Save original socket functions
+    original_socket = socket.socket
+    original_getaddrinfo = socket.getaddrinfo
+    
+    def override_getaddrinfo(*args, **kwargs):
+        # Force IPv4 by default if no family is specified
+        if 'family' not in kwargs and len(args) < 3:
+            kwargs['family'] = socket.AF_INET
+        return original_getaddrinfo(*args, **kwargs)
+    
+    def override_socket(family=None, *args, **kwargs):
+        # Force IPv4 for socket creation
+        if family == socket.AF_INET6 or family is None:
+            family = socket.AF_INET
+        return original_socket(family, *args, **kwargs)
+    
+    # Apply the monkey patches
+    socket.getaddrinfo = override_getaddrinfo
+    socket.socket = override_socket
     
     # Configure SSL context
     ssl_context = ssl.create_default_context()
@@ -108,19 +128,18 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
         if "supabase.co" in host:
             logger.info("Supabase host detected, configuring direct connection")
             
-            # Resolve host to IPv4
+            # Get IP address (our patched getaddrinfo will force IPv4)
             try:
-                host_info = socket.getaddrinfo(host, port, 
-                                           family=socket.AF_INET,  # Force IPv4
-                                           type=socket.SOCK_STREAM)
+                host_info = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
                 if host_info:
-                    ipv4_address = host_info[0][4][0]
-                    logger.info(f"Resolved {host} to IPv4: {ipv4_address}")
-                    host = ipv4_address
+                    ip_address = host_info[0][4][0]
+                    logger.info(f"Resolved {host} to {ip_address} (family: {host_info[0][0].name})")
+                    host = ip_address
                 else:
-                    logger.warning(f"Could not resolve {host} to IPv4, using original host")
+                    logger.warning(f"Could not resolve {host}")
             except Exception as e:
-                logger.warning(f"Error resolving {host} to IPv4: {e}, using original host")
+                logger.warning(f"Error resolving {host}: {e}")
+                raise
             
             # Build connection parameters
             connection_params = [
