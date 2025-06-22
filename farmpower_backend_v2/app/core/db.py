@@ -32,13 +32,16 @@ if not SQLALCHEMY_DATABASE_URL:
 def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     """Create a database engine with retry logic and better error handling."""
     import socket
-    from urllib.parse import urlparse, urlunparse
+    from urllib.parse import urlparse, urlunparse, quote_plus, unquote
     
     attempts = 0
     last_exception = None
     
     # Log the database URL (masked) for debugging
     db_url = SQLALCHEMY_DATABASE_URL
+    
+    # List of known Supabase IPv4 addresses (you might need to update this)
+    SUPABASE_IPV4 = "35.239.86.27"  # This is a placeholder, replace with actual Supabase IPv4 if known
     
     # Parse the database URL to modify connection parameters
     parsed_url = urlparse(db_url)
@@ -90,42 +93,58 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
         # Parse the hostname and handle IPv4/IPv6
         host = parsed_url.hostname
         
-        # Force IPv4 resolution using a more reliable method
-        try:
-            # First try to get IPv4 address directly
+        # For Supabase, use the direct IPv4 address if available
+        if "supabase.co" in host and hasattr(socket, 'AF_INET'):
+            logger.info("Supabase host detected, forcing IPv4 connection")
+            # Use the known Supabase IPv4 address
+            host = SUPABASE_IPV4
+            logger.info(f"Using direct IPv4 address for Supabase: {host}")
+        else:
+            # For non-Supabase hosts, try to resolve to IPv4
             try:
                 # Try to resolve to IPv4 using getaddrinfo with AF_INET
-                host_info = socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)
-                if host_info:
-                    ipv4_address = host_info[0][4][0]
-                    logger.info(f"Resolved {host} to IPv4: {ipv4_address}")
-                    host = ipv4_address
-                else:
-                    logger.warning(f"No IPv4 address found for {host}, trying system resolver")
-                    ipv4_address = socket.gethostbyname(host)
-                    logger.info(f"Resolved {host} to IPv4 (alternative method): {ipv4_address}")
-                    host = ipv4_address
-            except (socket.gaierror, socket.error) as e:
-                logger.warning(f"Primary IPv4 resolution failed for {host}: {e}")
-                # Try alternative resolution method
                 try:
-                    import socket as socket_module
-                    # Force IPv4 by using AF_INET and SOCK_STREAM
-                    for res in socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM):
-                        af, socktype, proto, canonname, sa = res
-                        ipv4_address = sa[0]
-                        logger.info(f"Resolved {host} to IPv4 (fallback): {ipv4_address}")
+                    host_info = socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)
+                    if host_info:
+                        ipv4_address = host_info[0][4][0]
+                        logger.info(f"Resolved {host} to IPv4: {ipv4_address}")
                         host = ipv4_address
-                        break
-                except Exception as inner_e:
-                    logger.warning(f"Fallback IPv4 resolution failed: {inner_e}")
-                    # If all else fails, force the connection to use IPv4 by using the hostname with a special parameter
-                    host = f"{host}?connect_timeout=30&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5&sslmode=require&options=-c%20statement_timeout=60000"
-                    logger.warning(f"Using hostname with connection parameters: {host}")
-        except Exception as e:
-            logger.error(f"Error during host resolution: {e}")
-            # If resolution fails completely, use the original hostname as a last resort
-            logger.warning(f"Using original hostname due to resolution failure: {host}")
+                    else:
+                        logger.warning(f"No IPv4 address found for {host}, trying system resolver")
+                        ipv4_address = socket.gethostbyname(host)
+                        logger.info(f"Resolved {host} to IPv4 (alternative method): {ipv4_address}")
+                        host = ipv4_address
+                except (socket.gaierror, socket.error) as e:
+                    logger.warning(f"Primary IPv4 resolution failed for {host}: {e}")
+                    # Try alternative resolution method
+                    try:
+                        for res in socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM):
+                            af, socktype, proto, canonname, sa = res
+                            ipv4_address = sa[0]
+                            logger.info(f"Resolved {host} to IPv4 (fallback): {ipv4_address}")
+                            host = ipv4_address
+                            break
+                    except Exception as inner_e:
+                        logger.warning(f"Fallback IPv4 resolution failed: {inner_e}")
+            except Exception as e:
+                logger.error(f"Error during host resolution: {e}")
+                logger.warning(f"Using original hostname due to resolution failure: {host}")
+        
+        # Add connection parameters
+        connection_params = []
+        if '?' not in host:  # Don't add params if they're already in the host
+            connection_params.extend([
+                "connect_timeout=30",
+                "keepalives=1",
+                "keepalives_idle=30",
+                "keepalives_interval=10",
+                "keepalives_count=5",
+                "sslmode=require",
+                "options=-c statement_timeout=60000"
+            ])
+        
+        if connection_params:
+            host = f"{host}?{'&'.join(connection_params)}"
         
         # URL encode username and password
         from urllib.parse import quote_plus, unquote
@@ -157,32 +176,44 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
             logger.info(f"Attempt {attempts + 1}/{max_retries} - Connecting to database")
             
             # Rebuild the URL with the current host
-            db_url = urlunparse(parsed_url._replace(netloc=netloc))
-            
-            # Log the masked URL (without password)
-            safe_netloc = netloc.split('@')[-1]  # Remove credentials for logging
-            safe_netloc = safe_netloc.split('?')[0]  # Remove query params for logging
-            logger.info(f"Connecting to: {parsed_url.scheme}://...@{safe_netloc}")
-            
-            # Log the actual URL being used (masked)
-            masked_url = db_url
-            if '@' in masked_url:
-                # Mask the password in the URL
-                scheme_netloc, path = masked_url.split('@', 1)
-                if ':' in scheme_netloc:
-                    scheme, auth = scheme_netloc.split(':', 1)
-                    user_pass = auth.split('//')[-1]
-                    if ':' in user_pass:
-                        user = user_pass.split(':', 1)[0]
-                        masked_url = f"{scheme}://{user}:***@{path}"
-            logger.debug(f"Full connection URL (masked): {masked_url}")
-            
-            # Create the engine with updated URL
-            engine = create_engine(db_url, **engine_args)
-            
-            # Set up connection pool with aggressive recycling
-            engine.pool._pool_timeout = 30
-            engine.pool._recycle = 300  # Recycle connections after 5 minutes
+            try:
+                # Parse the netloc to handle potential query parameters
+                netloc_parts = netloc.split('?', 1)
+                base_netloc = netloc_parts[0]
+                query = netloc_parts[1] if len(netloc_parts) > 1 else ''
+                
+                # Reconstruct the URL with proper query parameters
+                if query:
+                    db_url = f"{parsed_url.scheme}://{base_netloc}?{query}"
+                else:
+                    db_url = f"{parsed_url.scheme}://{base_netloc}"
+                
+                # Log the masked URL (without password)
+                safe_netloc = base_netloc.split('@')[-1]  # Remove credentials for logging
+                logger.info(f"Connecting to: {parsed_url.scheme}://...@{safe_netloc}")
+                
+                # Log the actual URL being used (masked)
+                if '@' in db_url:
+                    # Mask the password in the URL
+                    scheme_netloc, path = db_url.split('@', 1)
+                    if '://' in scheme_netloc:
+                        scheme, auth = scheme_netloc.split('://', 1)
+                        if ':' in auth:
+                            user = auth.split(':', 1)[0]
+                            masked_url = f"{scheme}://{user}:***@{path}"
+                            logger.debug(f"Full connection URL (masked): {masked_url}")
+                
+                # Create the engine with updated URL
+                logger.info(f"Creating engine with URL: {parsed_url.scheme}://...@{safe_netloc}")
+                engine = create_engine(db_url, **engine_args)
+                
+                # Set up connection pool with aggressive recycling
+                engine.pool._pool_timeout = 30
+                engine.pool._recycle = 300  # Recycle connections after 5 minutes
+                
+            except Exception as e:
+                logger.error(f"Error creating database URL: {e}")
+                raise
             
             # Test the connection with a simple query
             with engine.connect() as conn:
