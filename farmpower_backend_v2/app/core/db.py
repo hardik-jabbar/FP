@@ -3,15 +3,26 @@ import sys
 import time
 import socket
 import ssl
-from typing import Generator, Optional
-from urllib.parse import urlparse, urlunparse
+import random
+from typing import Generator, Optional, List, Union, Dict, Any
+from urllib.parse import urlparse, urlunparse, quote_plus, unquote
 
-from sqlalchemy import create_engine, text, URL
-from sqlalchemy.exc import SQLAlchemyError, OperationalError
+from sqlalchemy import create_engine, text, URL, exc
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, scoped_session
 
 from app.core.config import settings
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Configure logging
 logging.basicConfig(
@@ -32,149 +43,211 @@ if not SQLALCHEMY_DATABASE_URL:
     print(error_msg, file=sys.stderr)
     sys.exit(1)
 
-def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
-    """Create a database engine with retry logic and better error handling."""
-    db_url = SQLALCHEMY_DATABASE_URL
+def get_connection_url(
+    parsed_url: urlparse,
+    host_override: Optional[str] = None,
+    port_override: Optional[int] = None
+) -> URL:
+    """Create a database URL from parsed URL with optional host/port overrides."""
+    return URL.create(
+        'postgresql',
+        username=parsed_url.username,
+        password=parsed_url.password,
+        host=host_override or parsed_url.hostname,
+        port=port_override or (parsed_url.port or 5432),
+        database=parsed_url.path.lstrip('/')
+    )
+
+def resolve_host_to_ip(hostname: str, port: int = 5432) -> List[Dict[str, Any]]:
+    """Resolve hostname to IP addresses with timeout and error handling."""
+    try:
+        # Try to get all IP addresses for the hostname
+        addrinfo = socket.getaddrinfo(
+            hostname, port,
+            family=socket.AF_INET,  # IPv4 only
+            type=socket.SOCK_STREAM,
+            proto=socket.IPPROTO_TCP
+        )
+        
+        # Extract unique IPs
+        unique_ips = {}
+        for _, _, _, _, (ip, _) in addrinfo:
+            if ip not in unique_ips:
+                unique_ips[ip] = {
+                    'ip': ip,
+                    'family': 'ipv4',
+                    'priority': 0  # Can be used for prioritization
+                }
+        
+        logger.info(f"Resolved {hostname} to IPs: {list(unique_ips.keys())}")
+        return list(unique_ips.values())
+        
+    except socket.gaierror as e:
+        logger.warning(f"DNS resolution failed for {hostname}: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error resolving {hostname}: {e}", exc_info=True)
+        return []
+
+def test_connection(engine: Engine, max_attempts: int = 3) -> bool:
+    """Test database connection with retries."""
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+                logger.info("Database connection test successful")
+                return True
+        except Exception as e:
+            last_error = e
+            wait_time = min(2 ** attempt, 10)  # Exponential backoff, max 10s
+            logger.warning(
+                f"Connection attempt {attempt}/{max_attempts} failed: {str(e)}. "
+                f"Retrying in {wait_time}s..."
+            )
+            time.sleep(wait_time)
+    
+    logger.error(f"All connection attempts failed. Last error: {str(last_error)}")
+    return False
+
+def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
+    """
+    Create a database engine with robust connection handling.
+    
+    Args:
+        max_retries: Maximum number of connection attempts
+        retry_delay: Initial delay between retries in seconds
+        
+    Returns:
+        SQLAlchemy Engine instance
+        
+    Raises:
+        Exception: If all connection attempts fail
+    """
+    # Get database URL from settings
+    db_url = settings.DATABASE_URL
     parsed_url = urlparse(db_url)
     
-    # Mask the password in the URL for logging
+    # Mask password for logging
+    safe_url = db_url
     if parsed_url.password:
-        masked_url = db_url.replace(parsed_url.password, '***')
-    else:
-        masked_url = db_url
+        safe_url = db_url.replace(parsed_url.password, '***')
     
-    logger.info(f"Creating database engine with URL: {masked_url}")
+    logger.info(f"Initializing database connection to: {safe_url}")
     
-    # Configure engine arguments
-    engine_args = {
+    # Configure engine parameters
+    engine_args: Dict[str, Any] = {
         "pool_pre_ping": True,
-        "pool_recycle": 300,
-        "pool_timeout": 30,
-        "max_overflow": 20,
-        "pool_size": 5,
-        "echo": True,
+        "pool_recycle": 300,  # Recycle connections after 5 minutes
+        "pool_timeout": 30,   # Wait up to 30s for a connection from the pool
+        "max_overflow": 10,   # Allow up to 10 connections beyond pool_size
+        "pool_size": 5,       # Maintain 5 persistent connections
+        "echo": False,        # Set to True for SQL query logging
+        "future": True,       # Use SQLAlchemy 2.0 style APIs
     }
     
-    # For SQLite, we need to add check_same_thread=False
+    # SQLite specific configuration
     if db_url.startswith('sqlite'):
-        engine_args["connect_args"] = {"check_same_thread": False}
+        engine_args.update({
+            "connect_args": {"check_same_thread": False},
+            "poolclass": None  # SQLite doesn't support connection pooling
+        })
+        logger.info("Using SQLite database")
         return create_engine(db_url, **engine_args)
     
-    # For PostgreSQL connections
-    host = parsed_url.hostname
+    # PostgreSQL specific configuration
+    host = parsed_url.hostname or 'localhost'
     port = parsed_url.port or 5432
-    dbname = parsed_url.path.lstrip('/')
     
-    # For Supabase connections
-    if "supabase.co" in host:
-        logger.info("Supabase host detected, configuring connection")
+    # Common PostgreSQL connection arguments
+    connect_args: Dict[str, Any] = {
+        'connect_timeout': 10,          # 10 second connection timeout
+        'keepalives': 1,               # Enable keepalive
+        'keepalives_idle': 30,          # Start sending keepalives after 30s of inactivity
+        'keepalives_interval': 10,      # Send keepalives every 10s
+        'keepalives_count': 5,          # Consider connection dead after 5 failed keepalives
+        'sslmode': 'require',           # Require SSL
+        'target_session_attrs': 'read-write',
+        'options': '-c statement_timeout=60000',  # 1 minute statement timeout
+    }
+    
+    # For Supabase, try multiple connection methods
+    if 'supabase.co' in host:
+        logger.info("Supabase host detected, using optimized connection settings")
         
-        # Force IPv4 resolution
-        try:
-            ipv4 = socket.gethostbyname(host)
-            logger.info(f"Resolved {host} to IPv4: {ipv4}")
-            
-            # Create connection URL with IPv4
-            connection_url = URL.create(
-                'postgresql',
-                username=parsed_url.username,
-                password=parsed_url.password,
-                host=ipv4,
-                port=port,
-                database=dbname
+        # Generate all possible connection URLs to try
+        connection_urls = []
+        
+        # 1. Try with hostname first (works in most environments)
+        connection_urls.append(get_connection_url(parsed_url))
+        
+        # 2. Try with resolved IPs
+        resolved_ips = resolve_host_to_ip(host, port)
+        for ip_info in resolved_ips:
+            connection_urls.append(get_connection_url(parsed_url, ip_info['ip'], port))
+        
+        # 3. Try with common alternative ports if default port fails
+        if port == 5432:
+            for alt_port in [5433, 5439]:
+                connection_urls.append(get_connection_url(parsed_url, host, alt_port))
+        
+        logger.info(f"Trying {len(connection_urls)} connection methods...")
+        
+        # Try each connection URL
+        for idx, connection_url in enumerate(connection_urls, 1):
+            display_url = str(connection_url).replace(
+                f":{parsed_url.password}@", 
+                f":{'*' * min(3, len(parsed_url.password or ''))}@"
             )
+            logger.info(f"Attempting connection {idx}/{len(connection_urls)}: {display_url}")
             
-            # Connection arguments
-            connect_args = {
-                'connect_timeout': 10,
-                'sslmode': 'require',
-                'keepalives': 1,
-                'keepalives_idle': 30,
-                'keepalives_interval': 10,
-                'keepalives_count': 5,
-                'target_session_attrs': 'read-write',
-                'options': '-c search_path=public',
-                'gssencmode': 'disable'
-            }
-            
-            # Create engine with retry logic
-            for attempt in range(1, max_retries + 1):
-                try:
-                    logger.info(f"Connection attempt {attempt}/{max_retries}")
-                    engine = create_engine(
-                        connection_url,
-                        connect_args=connect_args,
-                        **engine_args
-                    )
-                    
-                    # Test the connection
-                    with engine.connect() as conn:
-                        conn.execute(text("SELECT 1"))
-                    
+            try:
+                # Create engine with connection pooling
+                engine = create_engine(
+                    connection_url,
+                    connect_args=connect_args,
+                    **engine_args
+                )
+                
+                # Test the connection
+                if test_connection(engine, max_attempts=2):
                     logger.info("Successfully connected to the database")
                     return engine
-                    
-                except Exception as e:
-                    if attempt == max_retries:
-                        logger.error(f"Failed to connect after {max_retries} attempts")
-                        raise
-                    
-                    logger.warning(f"Connection attempt {attempt} failed: {str(e)}")
-                    time.sleep(retry_delay * (2 ** (attempt - 1)))  # Exponential backoff
-            
-        except Exception as e:
-            logger.error(f"Failed to resolve hostname or create engine: {str(e)}")
-            raise
+                
+            except Exception as e:
+                logger.warning(f"Connection attempt failed: {str(e)}")
+                continue
+        
+        # If we get here, all connection attempts failed
+        raise Exception(
+            "Failed to connect to Supabase database after trying all methods. "
+            "Please check your network connection, database URL, and firewall settings."
+        )
     
     # For non-Supabase PostgreSQL connections
     try:
-        # Try to resolve to IPv4
-        try:
-            host_info = socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)
-            if host_info:
-                ipv4_address = host_info[0][4][0]
-                logger.info(f"Resolved {host} to IPv4: {ipv4_address}")
-                host = ipv4_address
-        except Exception as e:
-            logger.warning(f"IPv4 resolution failed for {host}: {e}")
+        # Try to resolve hostname to IP
+        resolved_ips = resolve_host_to_ip(host, port)
+        if resolved_ips:
+            # If resolution successful, try connecting to the first IP
+            ip = resolved_ips[0]['ip']
+            logger.info(f"Using resolved IP address: {ip}")
+            connection_url = get_connection_url(parsed_url, ip, port)
+        else:
+            # Fall back to hostname if resolution fails
+            logger.warning(f"Could not resolve {host}, trying with hostname")
+            connection_url = get_connection_url(parsed_url, host, port)
         
-        # Create standard PostgreSQL connection
-        connection_url = URL.create(
-            'postgresql',
-            username=parsed_url.username,
-            password=parsed_url.password,
-            host=host,
-            port=port,
-            database=dbname
-        )
-        
-        connect_args = {
-            'connect_timeout': 30,
-            'sslmode': 'require',
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
-            'options': '-c statement_timeout=60000 -c idle_in_transaction_session_timeout=30000'
-        }
-        
-        return create_engine(connection_url, connect_args=connect_args, **engine_args)
+        # Create and test the connection
+        engine = create_engine(connection_url, connect_args=connect_args, **engine_args)
+        if test_connection(engine, max_attempts=2):
+            return engine
+            
+        raise Exception("Failed to establish database connection")
         
     except Exception as e:
-        logger.error(f"Failed to create database engine: {str(e)}")
+        logger.error(f"Failed to create database engine: {str(e)}", exc_info=True)
         raise
-        
-        # Handle the case where host might have query parameters
-        if '?' in host:
-            host, query = host.split('?', 1)
-            # Ensure the query parameters are properly encoded
-            query = '&'.join(f"{k}={quote_plus(v)}" for param in query.split('&') 
-                           for k, v in [param.split('=', 1) if '=' in param else (param, '')])
-            host = f"{host}?{query}"
-        
-        # Decode and re-encode username and password to handle any special characters
-        username = quote_plus(unquote(parsed_url.username or ''))
-        password = quote_plus(unquote(parsed_url.password or ''))
         
         # Rebuild the URL with the resolved host and encoded credentials
         netloc = f"{username}:{password}@{host}"
