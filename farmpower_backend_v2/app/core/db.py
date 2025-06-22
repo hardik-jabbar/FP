@@ -45,28 +45,15 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
     SUPABASE_HOST = "db.fmqxdoocmapllbuecblc.supabase.co"
     SUPABASE_PORT = 5432
     
-    # Force IPv4 by patching the socket module
+    # Skip hostname resolution and use the connection string directly
     import socket
     
-    # Save original socket functions
-    original_socket = socket.socket
-    original_getaddrinfo = socket.getaddrinfo
+    def skip_resolution(host, port, *args, **kwargs):
+        # Return a dummy IPv4 address to skip actual resolution
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (host, port))]
     
-    def override_getaddrinfo(*args, **kwargs):
-        # Force IPv4 by default if no family is specified
-        if 'family' not in kwargs and len(args) < 3:
-            kwargs['family'] = socket.AF_INET
-        return original_getaddrinfo(*args, **kwargs)
-    
-    def override_socket(family=None, *args, **kwargs):
-        # Force IPv4 for socket creation
-        if family == socket.AF_INET6 or family is None:
-            family = socket.AF_INET
-        return original_socket(family, *args, **kwargs)
-    
-    # Apply the monkey patches
-    socket.getaddrinfo = override_getaddrinfo
-    socket.socket = override_socket
+    # Patch getaddrinfo to skip hostname resolution
+    socket.getaddrinfo = skip_resolution
     
     # Configure SSL context
     ssl_context = ssl.create_default_context()
@@ -128,30 +115,28 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
         if "supabase.co" in host:
             logger.info("Supabase host detected, configuring direct connection")
             
-            # Get IP address (our patched getaddrinfo will force IPv4)
-            try:
-                host_info = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
-                if host_info:
-                    ip_address = host_info[0][4][0]
-                    logger.info(f"Resolved {host} to {ip_address} (family: {host_info[0][0].name})")
-                    host = ip_address
-                else:
-                    logger.warning(f"Could not resolve {host}")
-            except Exception as e:
-                logger.warning(f"Error resolving {host}: {e}")
-                raise
+            # Skip resolution and use the hostname directly
+            logger.info(f"Using Supabase hostname directly: {host}")
             
             # Build connection parameters
+            dbname = parsed_url.path.lstrip('/')
+            username = parsed_url.username
+            password = parsed_url.password
             connection_params = [
                 f"host={host}",
                 f"port={port}",
+                f"dbname={dbname}",
+                f"user={username}",
+                f"password={password}",
                 "sslmode=require",
                 "connect_timeout=10",
                 "keepalives=1",
                 "keepalives_idle=30",
                 "keepalives_interval=10",
                 "keepalives_count=5",
-                "target_session_attrs=read-write"
+                "target_session_attrs=read-write",
+                # Force IPv4 and disable IPv6
+                "options='-c search_path=public'"
             ]
             
             # Build connection string
