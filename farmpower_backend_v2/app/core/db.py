@@ -102,6 +102,7 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
         
         # Parse the hostname and handle IPv4/IPv6
         host = parsed_url.hostname
+        port = parsed_url.port or 5432  # Default to 5432 if not specified
         
         # For Supabase, use direct connection with SSL
         if "supabase.co" in host:
@@ -109,20 +110,17 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2):
             
             # Resolve host to IPv4
             try:
-                host_info = socket.getaddrinfo(SUPABASE_HOST, SUPABASE_PORT, 
-                                             family=socket.AF_INET,  # Force IPv4
-                                             type=socket.SOCK_STREAM)
+                host_info = socket.getaddrinfo(host, port, 
+                                           family=socket.AF_INET,  # Force IPv4
+                                           type=socket.SOCK_STREAM)
                 if host_info:
                     ipv4_address = host_info[0][4][0]
-                    logger.info(f"Resolved {SUPABASE_HOST} to IPv4: {ipv4_address}")
+                    logger.info(f"Resolved {host} to IPv4: {ipv4_address}")
                     host = ipv4_address
-                    port = SUPABASE_PORT
                 else:
-                    logger.warning(f"Could not resolve {SUPABASE_HOST} to IPv4, using original host")
-                    host = SUPABASE_HOST
+                    logger.warning(f"Could not resolve {host} to IPv4, using original host")
             except Exception as e:
-                logger.warning(f"Error resolving {SUPABASE_HOST} to IPv4: {e}, using original host")
-                host = SUPABASE_HOST
+                logger.warning(f"Error resolving {host} to IPv4: {e}, using original host")
             
             # Build connection parameters
             connection_params = [
