@@ -199,6 +199,13 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
         "future": True,                 # Use SQLAlchemy 2.0 style APIs
     }
     
+    # Parse the database URL to get components
+    parsed_url = urlparse(db_url)
+    
+    # Extract host from the parsed URL
+    host = parsed_url.hostname or ''
+    port = parsed_url.port or 5432
+    
     # Common PostgreSQL connection arguments
     connect_args: Dict[str, Any] = {
         'connect_timeout': 10,        # 10 second connection timeout
@@ -211,7 +218,6 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
         'sslrootcert': '/etc/ssl/certs/ca-certificates.crt',  # Use system CA certs
         'target_session_attrs': 'read-write',  # Ensure we connect to a writable primary
         'gssencmode': 'disable',      # Disable GSS encryption
-        'sslmode': 'verify-full',     # Verify server certificate
         'application_name': 'farmpower-backend',
     }
     
@@ -221,7 +227,8 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
         socket.AF_INET6 = socket.AF_INET
     
     # Supabase specific configuration
-    if 'supabase.co' in host or 'supabase' in host.lower():
+    if host and ('supabase.co' in host or 'supabase' in host.lower()):
+        logger.info(f"🔧 Applying Supabase-specific configuration for host: {host}")
         # Force IPv4 for Supabase
         connect_args['gssencmode'] = 'disable'
         connect_args['sslmode'] = 'require'
