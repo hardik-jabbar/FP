@@ -5,7 +5,8 @@ import logging
 import random
 import urllib3
 import dns.resolver
-from typing import Any, Dict, Generator, List, Optional, Union
+import sys
+from typing import Any, Dict, Generator, List, Optional, Union, cast
 from urllib.parse import urlparse, urlunparse
 
 # Configure logging
@@ -23,38 +24,28 @@ socket.has_ipv6 = False
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
 dns.resolver.default_resolver.nameservers = ['8.8.8.8', '8.8.4.4']  # Use Google DNS
 
-# Global flag to track if we've already patched the socket
-_socket_patched = False
+# Save the original socket functions
+_original_socket = socket.socket
+_original_getaddrinfo = socket.getaddrinfo
 
 def patch_socket_for_ipv4():
     """Monkey patch socket to force IPv4 and prevent IPv6 usage."""
-    global _socket_patched
-    if _socket_patched:
-        return
-        
-    original_socket = socket.socket
-    
+    # Patch socket.socket
     def patched_socket(family=socket.AF_INET, *args, **kwargs):
-        # Force IPv4
-        family = socket.AF_INET
-        return original_socket(family, *args, **kwargs)
+        family = socket.AF_INET  # Force IPv4
+        return _original_socket(family, *args, **kwargs)
     
     socket.socket = patched_socket
     
-    # Also patch getaddrinfo to prefer IPv4
-    original_getaddrinfo = socket.getaddrinfo
-    
-    def getaddrinfo_ipv4(host, port, family=0, *args, **kwargs):
+    # Patch socket.getaddrinfo
+    def patched_getaddrinfo(host, port, *args, **kwargs):
+        # Remove any existing family parameter to avoid conflicts
+        if 'family' in kwargs:
+            del kwargs['family']
         # Force IPv4
-        family = socket.AF_INET
-        try:
-            return original_getaddrinfo(host, port, family, *args, **kwargs)
-        except socket.gaierror as e:
-            logger.error(f"DNS resolution failed for {host}:{port}: {e}")
-            raise
+        return _original_getaddrinfo(host, port, family=socket.AF_INET, *args, **kwargs)
     
-    socket.getaddrinfo = getaddrinfo_ipv4
-    _socket_patched = True
+    socket.getaddrinfo = patched_getaddrinfo
     logger.info("Patched socket to force IPv4")
 
 # Apply socket patches
@@ -63,33 +54,21 @@ patch_socket_for_ipv4()
 # SQLAlchemy imports
 from sqlalchemy import create_engine, text, exc
 from sqlalchemy.engine import Engine, URL
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import Session, sessionmaker, Session as DBSession, declarative_base
+from sqlalchemy.orm import sessionmaker, Session as DBSession, declarative_base
 
 # SQLAlchemy Base class for models
 Base = declarative_base()
 
 # Export Base for use in models
-__all__ = ['Base', 'SessionLocal', 'engine', 'get_db']
+__all__ = ['Base', 'SessionLocal', 'engine', 'get_db', 'Session']
 
 # Get database URL from environment variables
-db_url = os.getenv("DATABASE_URL")
-if not db_url:
-    raise ValueError("DATABASE_URL environment variable is not set")
-
-# Disable IPv6 for all connections
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Save the original getaddrinfo
-original_getaddrinfo = socket.getaddrinfo
-
-def patched_getaddrinfo(*args, **kwargs):
-    # Force IPv4 for all DNS lookups
-    kwargs['family'] = socket.AF_INET
-    return original_getaddrinfo(*args, **kwargs)
-
-# Apply the patch
-socket.getaddrinfo = patched_getaddrinfo
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+if not SQLALCHEMY_DATABASE_URL:
+    error_msg = "Error: DATABASE_URL environment variable is not set."
+    logger.error(error_msg)
+    print(error_msg, file=sys.stderr)
+    sys.exit(1)
 
 from app.core.config import settings
 
