@@ -72,12 +72,20 @@ db_url = os.getenv("DATABASE_URL")
 if not db_url:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-# Apply the patch
-socket._getaddrinfo = socket.getaddrinfo
-socket.getaddrinfo = patched_getaddrinfo
-
 # Disable IPv6 for all connections
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Save the original getaddrinfo
+original_getaddrinfo = socket.getaddrinfo
+
+def patched_getaddrinfo(*args, **kwargs):
+    # Force IPv4 for all DNS lookups
+    kwargs['family'] = socket.AF_INET
+    return original_getaddrinfo(*args, **kwargs)
+
+# Apply the patch
+socket.getaddrinfo = patched_getaddrinfo
+
 from app.core.config import settings
 
 # Get the database URL from settings
