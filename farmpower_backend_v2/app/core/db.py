@@ -4,8 +4,20 @@ import time
 import socket
 import ssl
 import random
-from typing import Generator, Optional, List, Union, Dict, Any
+import urllib3
+from typing import Generator, Optional, List, Union, Dict, Any, Tuple
 from urllib.parse import urlparse, urlunparse, quote_plus, unquote
+
+# Disable IPv6 for all connections
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+socket.AF_UNSPEC = socket.AF_INET  # Force IPv4 only
+
+# Monkey patch socket.getaddrinfo to force IPv4
+def getaddrinfo_ipv4(host, port, family=0, type=0, proto=0, flags=0):
+    return socket.getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+# Apply the patch
+socket.getaddrinfo = getaddrinfo_ipv4
 
 from sqlalchemy import create_engine, text, URL, exc
 from sqlalchemy.engine import Engine
@@ -63,22 +75,24 @@ def resolve_host_to_ip(hostname: str, port: int = 5432) -> List[Dict[str, Any]]:
     try:
         logger.info(f"🔍 Attempting DNS resolution for {hostname}:{port}")
         
-        # Try system's default DNS resolution first
+        # Try system's default DNS resolution first with IPv4
         try:
-            ip = socket.gethostbyname(hostname)
+            # Force IPv4 resolution
+            ip = socket.gethostbyname_ex(hostname)[2][0]
             logger.info(f"✅ System DNS resolved {hostname} to {ip}")
             return [{'ip': ip, 'family': 'ipv4', 'priority': 0}]
-        except socket.gaierror as e:
+        except (socket.gaierror, IndexError) as e:
             logger.warning(f"⚠️ System DNS resolution failed for {hostname}: {e}")
         
         # Fall back to getaddrinfo with specific parameters
         try:
+            # Force IPv4 only
             addrinfo = socket.getaddrinfo(
                 hostname, port,
                 family=socket.AF_INET,  # Force IPv4 only
                 type=socket.SOCK_STREAM,
                 proto=socket.IPPROTO_TCP,
-                flags=socket.AI_ADDRCONFIG  # Only return addresses that the system has configured
+                flags=socket.AI_ADDRCONFIG | socket.AI_V4MAPPED
             )
             
             # Extract unique IPv4 addresses
@@ -193,8 +207,32 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
         'keepalives_interval': 10,    # Send keepalives every 10s
         'keepalives_count': 5,        # Consider connection dead after 5 failed keepalives
         'sslmode': 'require',         # Require SSL
-        'options': '-c statement_timeout=30000',  # 30 second statement timeout
+        'options': f'-c statement_timeout=30000 -c connect_timeout=10 -c keepalives=1 -c keepalives_idle=30 -c keepalives_interval=10 -c keepalives_count=5',
+        'sslrootcert': '/etc/ssl/certs/ca-certificates.crt',  # Use system CA certs
+        'target_session_attrs': 'read-write',  # Ensure we connect to a writable primary
+        'gssencmode': 'disable',      # Disable GSS encryption
+        'sslmode': 'verify-full',     # Verify server certificate
+        'application_name': 'farmpower-backend',
     }
+    
+    # Force IPv4 for all connections
+    if hasattr(socket, 'AF_INET6'):
+        # Disable IPv6 if available
+        socket.AF_INET6 = socket.AF_INET
+    
+    # Supabase specific configuration
+    if 'supabase.co' in host or 'supabase' in host.lower():
+        # Force IPv4 for Supabase
+        connect_args['gssencmode'] = 'disable'
+        connect_args['sslmode'] = 'require'
+        connect_args['target_session_attrs'] = 'read-write'
+        
+        # Add more aggressive timeouts for Supabase
+        connect_args['connect_timeout'] = 15
+        connect_args['keepalives_idle'] = 60
+        connect_args['keepalives_interval'] = 15
+        connect_args['keepalives_count'] = 3
+        connect_args['options'] = '-c statement_timeout=60000 -c idle_in_transaction_session_timeout=60000'
     
     # SQLite specific configuration
     if db_url.startswith('sqlite'):
