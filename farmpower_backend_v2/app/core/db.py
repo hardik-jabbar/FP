@@ -61,46 +61,54 @@ def get_connection_url(
 def resolve_host_to_ip(hostname: str, port: int = 5432) -> List[Dict[str, Any]]:
     """Resolve hostname to IPv4 addresses with timeout and error handling."""
     try:
-        # Force IPv4 resolution only
-        addrinfo = socket.getaddrinfo(
-            hostname, port,
-            family=socket.AF_INET,  # Force IPv4 only
-            type=socket.SOCK_STREAM,
-            proto=socket.IPPROTO_TCP,
-            flags=socket.AI_ADDRCONFIG  # Only return addresses that the system has configured
-        )
+        logger.info(f"🔍 Attempting DNS resolution for {hostname}:{port}")
         
-        # Extract unique IPv4 addresses
-        unique_ips = {}
-        for family, socktype, proto, _, sockaddr in addrinfo:
-            if family == socket.AF_INET:  # Double check it's IPv4
-                ip = sockaddr[0]
-                if ip not in unique_ips:
-                    unique_ips[ip] = {
-                        'ip': ip,
-                        'family': 'ipv4',
-                        'priority': 0
-                    }
-        
-        if not unique_ips:
-            logger.warning(f"No IPv4 addresses found for {hostname}")
-            return []
-            
-        logger.info(f"Resolved {hostname} to IPv4 addresses: {list(unique_ips.keys())}")
-        return list(unique_ips.values())
-        
-    except socket.gaierror as e:
-        logger.warning(f"DNS resolution failed for {hostname}: {e}")
-        # Try with system's default DNS resolution as fallback
+        # Try system's default DNS resolution first
         try:
             ip = socket.gethostbyname(hostname)
-            logger.info(f"Fallback resolution for {hostname} to {ip}")
+            logger.info(f"✅ System DNS resolved {hostname} to {ip}")
             return [{'ip': ip, 'family': 'ipv4', 'priority': 0}]
-        except Exception:
-            logger.error(f"Fallback DNS resolution also failed for {hostname}")
-            return []
+        except socket.gaierror as e:
+            logger.warning(f"⚠️ System DNS resolution failed for {hostname}: {e}")
+        
+        # Fall back to getaddrinfo with specific parameters
+        try:
+            addrinfo = socket.getaddrinfo(
+                hostname, port,
+                family=socket.AF_INET,  # Force IPv4 only
+                type=socket.SOCK_STREAM,
+                proto=socket.IPPROTO_TCP,
+                flags=socket.AI_ADDRCONFIG  # Only return addresses that the system has configured
+            )
+            
+            # Extract unique IPv4 addresses
+            unique_ips = {}
+            for family, socktype, proto, _, sockaddr in addrinfo:
+                if family == socket.AF_INET:  # Double check it's IPv4
+                    ip = sockaddr[0]
+                    if ip not in unique_ips:
+                        unique_ips[ip] = {
+                            'ip': ip,
+                            'family': 'ipv4',
+                            'priority': 0
+                        }
+            
+            if not unique_ips:
+                logger.warning(f"⚠️ No IPv4 addresses found for {hostname}")
+                return []
+                
+            logger.info(f"✅ getaddrinfo resolved {hostname} to IPv4 addresses: {list(unique_ips.keys())}")
+            return list(unique_ips.values())
+            
+        except Exception as e:
+            logger.warning(f"⚠️ getaddrinfo resolution failed for {hostname}: {e}")
+            
+        # If we get here, all resolution attempts failed
+        logger.error(f"❌ All DNS resolution attempts failed for {hostname}")
+        return []
+        
     except Exception as e:
-        logger.error(f"Unexpected error resolving {hostname}: {e}", exc_info=True)
+        logger.error(f"❌ Unexpected error resolving {hostname}: {e}", exc_info=True)
         return []
 
 def test_connection(engine: Engine, max_attempts: int = 3) -> bool:
@@ -108,20 +116,37 @@ def test_connection(engine: Engine, max_attempts: int = 3) -> bool:
     last_error = None
     for attempt in range(1, max_attempts + 1):
         try:
+            start_time = time.time()
             with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-                logger.info("Database connection test successful")
-                return True
+                # Test basic connection
+                result = conn.execute(text("SELECT 1"))
+                if result.scalar() == 1:
+                    elapsed = (time.time() - start_time) * 1000
+                    logger.info(f"✅ Database connection test successful ({elapsed:.2f}ms)")
+                    
+                    # Get database version for debugging
+                    try:
+                        version = conn.execute(text("SELECT version()")).scalar()
+                        logger.info(f"📊 Database version: {version}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Could not get database version: {e}")
+                    
+                    return True
+                else:
+                    raise Exception("Test query did not return expected result")
+                    
         except Exception as e:
             last_error = e
             wait_time = min(2 ** attempt, 10)  # Exponential backoff, max 10s
             logger.warning(
-                f"Connection attempt {attempt}/{max_attempts} failed: {str(e)}. "
+                f"⚠️ Connection test {attempt}/{max_attempts} failed: {str(e)}. "
                 f"Retrying in {wait_time}s..."
             )
             time.sleep(wait_time)
     
-    logger.error(f"All connection attempts failed. Last error: {str(last_error)}")
+    logger.error(f"❌ All connection tests failed. Last error: {str(last_error)}")
+    if hasattr(last_error, 'orig') and last_error.orig:
+        logger.error(f"Original error: {last_error.orig}")
     return False
 
 def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
@@ -154,7 +179,6 @@ def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
         "pool_pre_ping": True,          # Check connections before using them
         "pool_recycle": 300,            # Recycle connections after 5 minutes
         "pool_timeout": 15,             # Wait up to 15s for a connection from the pool
-        "pool_pre_ping_interval": 60,   # Check connections every minute
         "max_overflow": 5,              # Allow up to 5 connections beyond pool_size
         "pool_size": 5,                 # Maintain 5 persistent connections
         "echo": False,                  # Set to True for SQL query logging
