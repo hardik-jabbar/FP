@@ -63,8 +63,14 @@ patch_socket_for_ipv4()
 # SQLAlchemy imports
 from sqlalchemy import create_engine, text, exc
 from sqlalchemy.engine import Engine, URL
-from sqlalchemy.orm import Session, sessionmaker, Session as DBSession
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import Session, sessionmaker, Session as DBSession, declarative_base
+
+# SQLAlchemy Base class for models
+Base = declarative_base()
+
+# Export Base for use in models
+__all__ = ['Base', 'SessionLocal', 'engine', 'get_db']
 
 # Get database URL from environment variables
 db_url = os.getenv("DATABASE_URL")
