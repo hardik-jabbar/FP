@@ -54,7 +54,7 @@ patch_socket_for_ipv4()
 # SQLAlchemy imports
 from sqlalchemy import create_engine, text, exc
 from sqlalchemy.engine import Engine, URL
-from sqlalchemy.orm import sessionmaker, Session as DBSession, declarative_base
+from sqlalchemy.orm import sessionmaker, Session as DBSession, declarative_base, Session
 
 # SQLAlchemy Base class for models
 Base = declarative_base()
@@ -285,7 +285,7 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     logger.error(error_msg)
     raise Exception(error_msg)
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[DBSession, None, None]:
     """
     Dependency to get DB session.
     
