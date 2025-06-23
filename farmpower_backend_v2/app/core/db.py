@@ -1,50 +1,84 @@
-import logging
-import sys
-import time
+import os
 import socket
-import ssl
+import time
+import logging
 import random
 import urllib3
-from typing import Generator, Optional, List, Union, Dict, Any, Tuple
-from urllib.parse import urlparse, urlunparse, quote_plus, unquote
+import dns.resolver
+from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urlparse, urlunparse
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Disable IPv6 for all connections
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-socket.AF_UNSPEC = socket.AF_INET  # Force IPv4 only
 
-# Monkey patch socket.getaddrinfo to force IPv4
-def getaddrinfo_ipv4(host, port, family=0, type=0, proto=0, flags=0):
-    return socket.getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+# Force IPv4 only for all socket operations
+socket.AF_INET6 = socket.AF_INET
+socket.has_ipv6 = False
+
+# Configure DNS resolver to only return IPv4 addresses
+dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+dns.resolver.default_resolver.nameservers = ['8.8.8.8', '8.8.4.4']  # Use Google DNS
+
+# Global flag to track if we've already patched the socket
+_socket_patched = False
+
+def patch_socket_for_ipv4():
+    """Monkey patch socket to force IPv4 and prevent IPv6 usage."""
+    global _socket_patched
+    if _socket_patched:
+        return
+        
+    original_socket = socket.socket
+    
+    def patched_socket(family=socket.AF_INET, *args, **kwargs):
+        # Force IPv4
+        family = socket.AF_INET
+        return original_socket(family, *args, **kwargs)
+    
+    socket.socket = patched_socket
+    
+    # Also patch getaddrinfo to prefer IPv4
+    original_getaddrinfo = socket.getaddrinfo
+    
+    def getaddrinfo_ipv4(host, port, family=0, *args, **kwargs):
+        # Force IPv4
+        family = socket.AF_INET
+        try:
+            return original_getaddrinfo(host, port, family, *args, **kwargs)
+        except socket.gaierror as e:
+            logger.error(f"DNS resolution failed for {host}:{port}: {e}")
+            raise
+    
+    socket.getaddrinfo = getaddrinfo_ipv4
+    _socket_patched = True
+    logger.info("Patched socket to force IPv4")
+
+# Apply socket patches
+patch_socket_for_ipv4()
+
+# SQLAlchemy imports
+from sqlalchemy import create_engine, text, exc
+from sqlalchemy.engine import Engine, URL
+from sqlalchemy.engine.url import make_url
+from sqlalchemy.orm import sessionmaker, Session as DBSession
+from sqlalchemy.ext.declarative import declarative_base
+
+# Get database URL from environment variables
+db_url = os.getenv("DATABASE_URL")
+if not db_url:
+    raise ValueError("DATABASE_URL environment variable is not set")
 
 # Apply the patch
-socket.getaddrinfo = getaddrinfo_ipv4
+socket._getaddrinfo = socket.getaddrinfo
+socket.getaddrinfo = patched_getaddrinfo
 
-from sqlalchemy import create_engine, text, URL, exc
-from sqlalchemy.engine import Engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, scoped_session
-
+# Disable IPv6 for all connections
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from app.core.config import settings
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
 
 # Get the database URL from settings
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
@@ -70,60 +104,55 @@ def get_connection_url(
         database=parsed_url.path.lstrip('/')
     )
 
-def resolve_host_to_ip(hostname: str, port: int = 5432) -> List[Dict[str, Any]]:
-    """Resolve hostname to IPv4 addresses with timeout and error handling."""
+def resolve_host_to_ip(hostname: str, port: int = 5432) -> Dict[str, Any]:
+    """Resolve a hostname to its IPv4 address with multiple fallback strategies."""
+    # First try: Direct IP address (no resolution needed)
     try:
-        logger.info(f"🔍 Attempting DNS resolution for {hostname}:{port}")
+        socket.inet_pton(socket.AF_INET, hostname)
+        return {"host": hostname, "port": port, "family": socket.AF_INET}
+    except (socket.error, ValueError):
+        pass  # Not a direct IP, continue with resolution
+    
+    # Second try: System getaddrinfo with forced IPv4
+    try:
+        addrinfo = socket.getaddrinfo(hostname, port, socket.AF_INET, socket.SOCK_STREAM)
+        if addrinfo:
+            return {"host": addrinfo[0][4][0], "port": port, "family": socket.AF_INET}
+    except (socket.gaierror, socket.herror) as e:
+        logger.warning(f"System DNS resolution failed for {hostname}:{port}: {e}")
+    
+    # Third try: dnspython with Google DNS
+    try:
+        resolver = dns.resolver.Resolver()
+        resolver.nameservers = ['8.8.8.8', '8.8.4.4']  # Google DNS
+        resolver.timeout = 2
+        resolver.lifetime = 5
         
-        # Try system's default DNS resolution first with IPv4
+        # Try A records (IPv4)
         try:
-            # Force IPv4 resolution
-            ip = socket.gethostbyname_ex(hostname)[2][0]
-            logger.info(f"✅ System DNS resolved {hostname} to {ip}")
-            return [{'ip': ip, 'family': 'ipv4', 'priority': 0}]
-        except (socket.gaierror, IndexError) as e:
-            logger.warning(f"⚠️ System DNS resolution failed for {hostname}: {e}")
-        
-        # Fall back to getaddrinfo with specific parameters
+            answers = resolver.resolve(hostname, 'A')
+            if answers:
+                return {"host": str(answers[0]), "port": port, "family": socket.AF_INET}
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+            pass
+            
+        # Try CNAME
         try:
-            # Force IPv4 only
-            addrinfo = socket.getaddrinfo(
-                hostname, port,
-                family=socket.AF_INET,  # Force IPv4 only
-                type=socket.SOCK_STREAM,
-                proto=socket.IPPROTO_TCP,
-                flags=socket.AI_ADDRCONFIG | socket.AI_V4MAPPED
-            )
+            cname = resolver.resolve(hostname, 'CNAME')
+            if cname:
+                return resolve_host_to_ip(str(cname[0].target), port)
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+            pass
             
-            # Extract unique IPv4 addresses
-            unique_ips = {}
-            for family, socktype, proto, _, sockaddr in addrinfo:
-                if family == socket.AF_INET:  # Double check it's IPv4
-                    ip = sockaddr[0]
-                    if ip not in unique_ips:
-                        unique_ips[ip] = {
-                            'ip': ip,
-                            'family': 'ipv4',
-                            'priority': 0
-                        }
-            
-            if not unique_ips:
-                logger.warning(f"⚠️ No IPv4 addresses found for {hostname}")
-                return []
-                
-            logger.info(f"✅ getaddrinfo resolved {hostname} to IPv4 addresses: {list(unique_ips.keys())}")
-            return list(unique_ips.values())
-            
-        except Exception as e:
-            logger.warning(f"⚠️ getaddrinfo resolution failed for {hostname}: {e}")
-            
-        # If we get here, all resolution attempts failed
-        logger.error(f"❌ All DNS resolution attempts failed for {hostname}")
-        return []
-        
     except Exception as e:
-        logger.error(f"❌ Unexpected error resolving {hostname}: {e}", exc_info=True)
-        return []
+        logger.warning(f"DNS resolution with dnspython failed for {hostname}:{port}: {e}")
+    
+    # Final fallback: Hardcoded IP if hostname matches known Supabase pattern
+    if "db.supabase.com" in hostname:
+        logger.warning(f"Using hardcoded IP for Supabase as last resort")
+        return {"host": "35.239.129.36", "port": port, "family": socket.AF_INET}
+    
+    raise ValueError(f"Could not resolve {hostname} to an IPv4 address after multiple attempts")
 
 def test_connection(engine: Engine, max_attempts: int = 3) -> bool:
     """Test database connection with retries."""
@@ -163,278 +192,106 @@ def test_connection(engine: Engine, max_attempts: int = 3) -> bool:
         logger.error(f"Original error: {last_error.orig}")
     return False
 
-def create_db_engine(max_retries: int = 3, retry_delay: int = 2) -> Engine:
-    """
-    Create a database engine with robust connection handling.
+def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> Engine:
+    """Create a SQLAlchemy engine with robust connection handling and retries."""
+    if not SQLALCHEMY_DATABASE_URL:
+        raise ValueError("DATABASE_URL is not set in environment variables")
     
-    Args:
-        max_retries: Maximum number of connection attempts
-        retry_delay: Initial delay between retries in seconds
-        
-    Returns:
-        SQLAlchemy Engine instance
-        
-    Raises:
-        Exception: If all connection attempts fail
-    """
-    # Get database URL from settings
-    db_url = settings.DATABASE_URL
-    parsed_url = urlparse(db_url)
+    # Ensure socket is patched for IPv4
+    patch_socket_for_ipv4()
     
-    # Mask password for logging
-    safe_url = db_url
-    if parsed_url.password:
-        safe_url = db_url.replace(parsed_url.password, '***')
-    
-    logger.info(f"Initializing database connection to: {safe_url}")
-    
-    # Configure engine parameters with more aggressive timeouts
-    engine_args: Dict[str, Any] = {
-        "pool_pre_ping": True,          # Check connections before using them
-        "pool_recycle": 300,            # Recycle connections after 5 minutes
-        "pool_timeout": 15,             # Wait up to 15s for a connection from the pool
-        "max_overflow": 5,              # Allow up to 5 connections beyond pool_size
-        "pool_size": 5,                 # Maintain 5 persistent connections
-        "echo": False,                  # Set to True for SQL query logging
-        "future": True,                 # Use SQLAlchemy 2.0 style APIs
-    }
-    
-    # Parse the database URL to get components
-    parsed_url = urlparse(db_url)
-    
-    # Extract host from the parsed URL
-    host = parsed_url.hostname or ''
+    # Parse the database URL
+    parsed_url = urlparse(SQLALCHEMY_DATABASE_URL)
+    original_host = parsed_url.hostname or ""
     port = parsed_url.port or 5432
     
-    # Common PostgreSQL connection arguments
-    connect_args: Dict[str, Any] = {
-        'connect_timeout': 10,        # 10 second connection timeout
-        'keepalives': 1,              # Enable keepalive
-        'keepalives_idle': 30,        # Start sending keepalives after 30s of inactivity
-        'keepalives_interval': 10,    # Send keepalives every 10s
-        'keepalives_count': 5,        # Consider connection dead after 5 failed keepalives
-        'sslmode': 'require',         # Require SSL
-        'options': f'-c statement_timeout=30000 -c connect_timeout=10 -c keepalives=1 -c keepalives_idle=30 -c keepalives_interval=10 -c keepalives_count=5',
-        'sslrootcert': '/etc/ssl/certs/ca-certificates.crt',  # Use system CA certs
-        'target_session_attrs': 'read-write',  # Ensure we connect to a writable primary
-        'gssencmode': 'disable',      # Disable GSS encryption
-        'application_name': 'farmpower-backend',
+    # Connection arguments with aggressive timeouts and keepalives
+    connect_args = {
+        "connect_timeout": 10,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+        "options": "-c statement_timeout=30000 -c idle_in_transaction_session_timeout=30000"
     }
     
-    # Force IPv4 for all connections
-    if hasattr(socket, 'AF_INET6'):
-        # Disable IPv6 if available
-        socket.AF_INET6 = socket.AF_INET
+    # Force SSL if not explicitly set
+    if "sslmode" not in SQLALCHEMY_DATABASE_URL.lower():
+        connect_args["sslmode"] = "require"
     
-    # Supabase specific configuration
-    if host and ('supabase.co' in host or 'supabase' in host.lower()):
-        logger.info(f"🔧 Applying Supabase-specific configuration for host: {host}")
-        # Force IPv4 for Supabase
-        connect_args['gssencmode'] = 'disable'
-        connect_args['sslmode'] = 'require'
-        connect_args['target_session_attrs'] = 'read-write'
-        
-        # Add more aggressive timeouts for Supabase
-        connect_args['connect_timeout'] = 15
-        connect_args['keepalives_idle'] = 60
-        connect_args['keepalives_interval'] = 15
-        connect_args['keepalives_count'] = 3
-        connect_args['options'] = '-c statement_timeout=60000 -c idle_in_transaction_session_timeout=60000'
+    # Add Supabase-specific settings
+    connect_args["options"] = "-c default_transaction_isolation=read committed"
     
-    # SQLite specific configuration
-    if db_url.startswith('sqlite'):
-        engine_args.update({
-            "connect_args": {"check_same_thread": False},
-            "poolclass": None  # SQLite doesn't support connection pooling
-        })
-        logger.info("Using SQLite database")
-        return create_engine(db_url, **engine_args)
+    last_error = None
+    retry_delay = initial_retry_delay
+    max_retry_delay = 30  # Maximum 30 seconds between retries
     
-    # PostgreSQL specific configuration
-    host = parsed_url.hostname or 'localhost'
-    port = parsed_url.port or 5432
-    
-    # For Supabase, try multiple connection methods with retries
-    if 'supabase.co' in host:
-        logger.info("Supabase host detected, using optimized connection settings")
-        
-        # Generate all possible connection URLs to try
-        connection_strategies = []
-        
-        # 1. Try with hostname first (works in most environments)
-        connection_strategies.append((
-            lambda: get_connection_url(parsed_url),
-            'hostname',
-            connect_args
-        ))
-        
-        # 2. Try with resolved IPs (IPv4 only)
-        resolved_ips = resolve_host_to_ip(host, port)
-        for ip_info in resolved_ips:
-            if ip_info['family'] == 'ipv4':  # Only use IPv4
-                ip_connect_args = connect_args.copy()
-                ip_connect_args['hostaddr'] = ip_info['ip']  # Force specific IP
-                connection_strategies.append((
-                    lambda ip=ip_info['ip']: get_connection_url(parsed_url, ip, port),
-                    f'resolved_ipv4_{ip_info["ip"]}',
-                    ip_connect_args
-                ))
-        
-        # 3. Try with common alternative ports if default port fails
-        if port == 5432:
-            for alt_port in [5433, 5439]:
-                port_connect_args = connect_args.copy()
-                connection_strategies.append((
-                    lambda p=alt_port: get_connection_url(parsed_url, host, p),
-                    f'alt_port_{alt_port}',
-                    port_connect_args
-                ))
-        
-        # Try each connection strategy with retries
-        last_error = None
-        for strategy in connection_strategies:
-            get_url_fn, method, strategy_connect_args = strategy
+    for attempt in range(max_retries):
+        try:
+            # Try to resolve host to IP on each attempt
+            try:
+                resolved = resolve_host_to_ip(original_host, port)
+                host = resolved["host"]
+                logger.info(f"Resolved {original_host} to {host} (attempt {attempt + 1})")
+                
+                # Rebuild URL with resolved IP
+                netloc = f"{parsed_url.username}:{parsed_url.password}@{host}:{port}"
+                parsed_url = parsed_url._replace(netloc=netloc)
+                db_url_resolved = urlunparse(parsed_url)
+                
+                # Force IPv4 in connection args
+                connect_args["hostaddr"] = host
+                
+            except Exception as resolve_error:
+                logger.error(f"DNS resolution failed: {resolve_error}")
+                # If resolution fails, try with original URL as last resort
+                db_url_resolved = SQLALCHEMY_DATABASE_URL
+                if "hostaddr" in connect_args:
+                    del connect_args["hostaddr"]
             
-            for attempt in range(max_retries):
-                try:
-                    # Get the URL for this attempt
-                    connection_url = get_url_fn()
-                    
-                    # Mask password for logging
-                    display_url = str(connection_url).replace(
-                        f":{parsed_url.password}@", 
-                        f":{'*' * min(3, len(parsed_url.password or ''))}@"
-                    )
-                    
-                    logger.info(f"Attempt {attempt + 1}/{max_retries} ({method}): {display_url}")
-                    
-                    # Create engine with connection pooling
-                    engine = create_engine(
-                        connection_url,
-                        connect_args=strategy_connect_args,
-                        **engine_args
-                    )
-                    
-                    # Test the connection with a simple query
-                    if test_connection(engine, max_attempts=1):
-                        logger.info(f"✅ Successfully connected to the database using {method}")
-                        return engine
-                    
-                except Exception as e:
-                    last_error = e
-                    wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
-                    logger.warning(f"⚠️ Connection attempt failed ({method}): {str(e)}")
-                    logger.info(f"⏳ Retrying in {wait_time} seconds...")
-                    time.sleep(wait_time)
-        
-        # If we get here, all connection attempts failed
-        error_msg = (
-            "❌ Failed to connect to Supabase database after all attempts.\n"
-            "\nPossible causes:\n"
-            "1. Network connectivity issues\n"
-            "2. Incorrect database URL or credentials\n"
-            f"3. Firewall blocking the connection to {host}\n"
-            "4. Supabase service might be down or rate limiting\n"
-            "\nTroubleshooting steps:\n"
-            "- Verify your internet connection\n"
-            "- Check if the database URL is correct\n"
-            "- Try accessing the database from a different network\n"
-            f"- Check Supabase dashboard for any service disruptions\n"
-            f"\nLast error: {str(last_error) if last_error else 'Unknown error'}"
-        )
-        logger.error(error_msg)
-        raise Exception(error_msg) from last_error
+            # Create engine with current settings
+            engine = create_engine(
+                db_url_resolved,
+                pool_pre_ping=True,
+                pool_recycle=300,  # Recycle connections after 5 minutes
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                connect_args=connect_args,
+                # Disable connection pooling during connection testing
+                poolclass=None if attempt == 0 else None
+            )
+            
+            # Test the connection with a simple query
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT 1"))
+                if result.scalar() != 1:
+                    raise Exception("Test query did not return expected result")
+            
+            logger.info("Successfully connected to the database")
+            return engine
+            
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries - 1:
+                # Calculate next retry delay with exponential backoff and jitter
+                retry_delay = min(retry_delay * 2, max_retry_delay)
+                jitter = random.uniform(0.8, 1.2)  # Add some randomness
+                actual_delay = min(retry_delay * jitter, max_retry_delay)
+                
+                logger.warning(
+                    f"Connection attempt {attempt + 1}/{max_retries} failed: {str(e)}. "
+                    f"Retrying in {actual_delay:.1f}s..."
+                )
+                time.sleep(actual_delay)
     
-    # For non-Supabase PostgreSQL connections
-    try:
-        last_error = None
-        
-        # Try to resolve hostname to IP first
-        resolved_ips = resolve_host_to_ip(host, port)
-        connection_urls = []
-        
-        if resolved_ips:
-            # Try resolved IPs first
-            for ip_info in resolved_ips:
-                if ip_info['family'] == 'ipv4':
-                    connection_urls.append((
-                        get_connection_url(parsed_url, ip_info['ip'], port),
-                        f'resolved_ipv4_{ip_info["ip"]}'
-                    ))
-        
-        # Always try with hostname as fallback
-        connection_urls.append((
-            get_connection_url(parsed_url, host, port),
-            'hostname'
-        ))
-        
-        # Try each connection URL with retries
-        for connection_url, method in connection_urls:
-            for attempt in range(max_retries):
-                try:
-                    # Mask password for logging
-                    display_url = str(connection_url).replace(
-                        f":{parsed_url.password}@", 
-                        f":{'*' * min(3, len(parsed_url.password or ''))}@"
-                    )
-                    logger.info(f"Attempt {attempt + 1}/{max_retries} ({method}): {display_url}")
-                    
-                    # Create engine with connection pooling
-                    engine = create_engine(
-                        connection_url,
-                        connect_args=connect_args,
-                        **engine_args
-                    )
-                    
-                    # Test the connection with a simple query
-                    if test_connection(engine, max_attempts=1):
-                        logger.info(f"✅ Successfully connected to the database using {method}")
-                        return engine
-                        
-                except Exception as e:
-                    last_error = e
-                    wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
-                    logger.warning(f"⚠️ Connection attempt failed ({method}): {str(e)}")
-                    logger.info(f"⏳ Retrying in {wait_time} seconds...")
-                    time.sleep(wait_time)
-        
-        # If we get here, all connection attempts failed
-        error_msg = (
-            f"❌ Failed to connect to PostgreSQL database at {host}:{port} after {max_retries} attempts.\n"
-            f"Last error: {str(last_error) if last_error else 'Unknown error'}"
-        )
-        logger.error(error_msg)
-        raise Exception(error_msg) from last_error
-        
-    except Exception as e:
-        logger.error(f"❌ Failed to create database engine: {str(e)}", exc_info=True)
-        raise
-    error_msg = f"❌ Failed to connect to the database after {max_retries} attempts. " \
-               f"Last error: {str(last_exception)}\n" \
-               f"Database URL format: {masked_url}"
-    
+    # If we get here, all retries failed
+    error_msg = (
+        f"Failed to connect to database after {max_retries} attempts. "
+        f"Last error: {str(last_error) if last_error else 'Unknown error'}"
+    )
     logger.error(error_msg)
-    
-    # Provide more detailed error information
-    if "Invalid port" in str(last_exception):
-        logger.error("⚠️  Check if the port number is correct in your database URL")
-    if "password authentication failed" in str(last_exception).lower():
-        logger.error("⚠️  Check if the username and password are correct")
-    if "does not exist" in str(last_exception).lower():
-        logger.error("⚠️  Check if the database name is correct")
-    if "could not translate host name" in str(last_exception).lower():
-        logger.error("⚠️  Check if the database hostname is correct and accessible")
-    
-    sys.exit(1)
-
-# Create the database engine
-engine = create_db_engine()
-
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
-Base = declarative_base()
+    raise Exception(error_msg)
 
 def get_db() -> Generator[Session, None, None]:
     """
@@ -444,12 +301,12 @@ def get_db() -> Generator[Session, None, None]:
         Session: A database session
         
     Raises:
-        SQLAlchemyError: If there's an error creating or using the session
+        Exception: If there's an error creating or using the session
     """
     db = SessionLocal()
     try:
         yield db
-    except SQLAlchemyError as e:
+    except Exception as e:
         logger.error(f"Database error: {str(e)}")
         db.rollback()
         raise
