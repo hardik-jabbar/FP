@@ -325,3 +325,10 @@ def get_db() -> Generator[Session, None, None]:
         raise
     finally:
         db.close()
+
+# Create database engine and session
+engine = create_db_engine()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Update exports to include all necessary components
+__all__ = ['Base', 'SessionLocal', 'engine', 'get_db', 'Session']
