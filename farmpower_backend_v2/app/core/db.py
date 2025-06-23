@@ -63,8 +63,7 @@ patch_socket_for_ipv4()
 # SQLAlchemy imports
 from sqlalchemy import create_engine, text, exc
 from sqlalchemy.engine import Engine, URL
-from sqlalchemy.engine.url import make_url
-from sqlalchemy.orm import sessionmaker, Session as DBSession
+from sqlalchemy.orm import Session, sessionmaker, Session as DBSession
 from sqlalchemy.ext.declarative import declarative_base
 
 # Get database URL from environment variables
