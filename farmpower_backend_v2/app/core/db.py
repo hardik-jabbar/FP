@@ -32,20 +32,31 @@ def patch_socket_for_ipv4():
     """Monkey patch socket to force IPv4 and prevent IPv6 usage."""
     # Patch socket.socket
     def patched_socket(family=socket.AF_INET, *args, **kwargs):
-        family = socket.AF_INET  # Force IPv4
-        return _original_socket(family, *args, **kwargs)
-    
-    socket.socket = patched_socket
+        # Force IPv4 only
+        return _original_socket(socket.AF_INET, *args, **kwargs)
     
     # Patch socket.getaddrinfo
-    def patched_getaddrinfo(host, port, *args, **kwargs):
-        # Remove any existing family parameter to avoid conflicts
-        if 'family' in kwargs:
-            del kwargs['family']
-        # Force IPv4
-        return _original_getaddrinfo(host, port, family=socket.AF_INET, *args, **kwargs)
+    def patched_getaddrinfo(host, port, family=0, *args, **kwargs):
+        # Force IPv4 only
+        if family == 0 or family == socket.AF_UNSPEC:
+            family = socket.AF_INET
+        elif family == socket.AF_INET6:
+            # If IPv6 is explicitly requested, still force IPv4
+            family = socket.AF_INET
+        
+        # Remove any existing family from kwargs to avoid duplicates
+        kwargs.pop('family', None)
+        
+        # Call original getaddrinfo with forced IPv4
+        return _original_getaddrinfo(host, port, family=family, *args, **kwargs)
     
+    # Apply patches
+    socket.socket = patched_socket
     socket.getaddrinfo = patched_getaddrinfo
+    
+    # Disable IPv6 at the socket module level
+    socket.has_ipv6 = False
+    
     logger.info("Patched socket to force IPv4")
 
 # Apply socket patches
@@ -98,53 +109,57 @@ def get_connection_url(
 
 def resolve_host_to_ip(hostname: str, port: int = 5432) -> Dict[str, Any]:
     """Resolve a hostname to its IPv4 address with multiple fallback strategies."""
-    # First try: Direct IP address (no resolution needed)
+    if not hostname or hostname == 'localhost':
+        return {"host": "127.0.0.1", "port": port, "resolved": False}
+    
+    # Skip resolution for IP addresses
     try:
         socket.inet_pton(socket.AF_INET, hostname)
-        return {"host": hostname, "port": port, "family": socket.AF_INET}
-    except (socket.error, ValueError):
-        pass  # Not a direct IP, continue with resolution
+        return {"host": hostname, "port": port, "resolved": False}
+    except (socket.error, OSError):
+        pass
     
-    # Second try: System getaddrinfo with forced IPv4
+    # Try system DNS resolution first with explicit IPv4
     try:
-        addrinfo = socket.getaddrinfo(hostname, port, socket.AF_INET, socket.SOCK_STREAM)
-        if addrinfo:
-            return {"host": addrinfo[0][4][0], "port": port, "family": socket.AF_INET}
-    except (socket.gaierror, socket.herror) as e:
-        logger.warning(f"System DNS resolution failed for {hostname}:{port}: {e}")
-    
-    # Third try: dnspython with Google DNS
-    try:
-        resolver = dns.resolver.Resolver()
-        resolver.nameservers = ['8.8.8.8', '8.8.4.4']  # Google DNS
-        resolver.timeout = 2
-        resolver.lifetime = 5
-        
-        # Try A records (IPv4)
-        try:
-            answers = resolver.resolve(hostname, 'A')
-            if answers:
-                return {"host": str(answers[0]), "port": port, "family": socket.AF_INET}
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-            pass
-            
-        # Try CNAME
-        try:
-            cname = resolver.resolve(hostname, 'CNAME')
-            if cname:
-                return resolve_host_to_ip(str(cname[0].target), port)
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-            pass
-            
+        # Use the patched getaddrinfo which will force IPv4
+        addr_info = socket.getaddrinfo(hostname, port, family=socket.AF_INET, type=socket.SOCK_STREAM)
+        if addr_info:
+            ip = addr_info[0][4][0]  # Get the first resolved IP
+            logger.info(f"Resolved {hostname} to {ip} using system DNS (IPv4)")
+            return {"host": ip, "port": port, "resolved": True}
     except Exception as e:
-        logger.warning(f"DNS resolution with dnspython failed for {hostname}:{port}: {e}")
+        logger.warning(f"System DNS resolution failed for {hostname}: {e}")
     
-    # Final fallback: Hardcoded IP if hostname matches known Supabase pattern
-    if "db.supabase.com" in hostname:
+    # Fallback to Google DNS with explicit IPv4 resolution
+    try:
+        resolver = dns.resolver.Resolver(configure=False)
+        resolver.nameservers = ['8.8.8.8', '8.8.4.4']  # Google DNS
+        answers = resolver.resolve(hostname, 'A')  # Only query for A records (IPv4)
+        if answers:
+            ip = str(answers[0])
+            logger.info(f"Resolved {hostname} to {ip} using Google DNS (IPv4)")
+            return {"host": ip, "port": port, "resolved": True}
+    except Exception as e:
+        logger.warning(f"Google DNS resolution failed for {hostname}: {e}")
+    
+    # Try direct socket resolution with original socket (IPv4 only)
+    try:
+        # Use the original socket function directly to avoid any patching issues
+        ip = _original_socket(socket.AF_INET, socket.SOCK_STREAM).getaddrinfo(hostname, port, socket.AF_INET)[0][4][0]
+        logger.info(f"Resolved {hostname} to {ip} using direct socket (IPv4)")
+        return {"host": ip, "port": port, "resolved": True}
+    except Exception as e:
+        logger.warning(f"Direct socket resolution failed for {hostname}: {e}")
+    
+    # Special case for Supabase
+    if "supabase" in hostname.lower():
         logger.warning(f"Using hardcoded IP for Supabase as last resort")
-        return {"host": "35.239.129.36", "port": port, "family": socket.AF_INET}
+        return {"host": "35.239.129.36", "port": port, "resolved": True}
     
-    raise ValueError(f"Could not resolve {hostname} to an IPv4 address after multiple attempts")
+    # If we get here, all resolution attempts failed
+    error_msg = f"All resolution methods failed for {hostname}"
+    logger.error(error_msg)
+    raise ValueError(error_msg)
 
 def test_connection(engine: Engine, max_attempts: int = 3) -> bool:
     """Test database connection with retries."""
