@@ -112,6 +112,12 @@ def resolve_host_to_ip(hostname: str, port: int = 5432) -> Dict[str, Any]:
     if not hostname or hostname == 'localhost':
         return {"host": "127.0.0.1", "port": port, "resolved": False}
     
+    # Special handling for Supabase
+    if "supabase" in hostname.lower():
+        # Try direct connection first (Supabase handles DNS)
+        logger.info("Using direct connection to Supabase")
+        return {"host": hostname, "port": port, "resolved": False}
+    
     # Skip resolution for IP addresses
     try:
         socket.inet_pton(socket.AF_INET, hostname)
@@ -121,7 +127,6 @@ def resolve_host_to_ip(hostname: str, port: int = 5432) -> Dict[str, Any]:
     
     # Try system DNS resolution first with explicit IPv4
     try:
-        # Use the patched getaddrinfo which will force IPv4
         addr_info = socket.getaddrinfo(hostname, port, family=socket.AF_INET, type=socket.SOCK_STREAM)
         if addr_info:
             ip = addr_info[0][4][0]  # Get the first resolved IP
@@ -130,34 +135,8 @@ def resolve_host_to_ip(hostname: str, port: int = 5432) -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"System DNS resolution failed for {hostname}: {e}")
     
-    # Fallback to Google DNS with explicit IPv4 resolution
-    try:
-        resolver = dns.resolver.Resolver(configure=False)
-        resolver.nameservers = ['8.8.8.8', '8.8.4.4']  # Google DNS
-        answers = resolver.resolve(hostname, 'A')  # Only query for A records (IPv4)
-        if answers:
-            ip = str(answers[0])
-            logger.info(f"Resolved {hostname} to {ip} using Google DNS (IPv4)")
-            return {"host": ip, "port": port, "resolved": True}
-    except Exception as e:
-        logger.warning(f"Google DNS resolution failed for {hostname}: {e}")
-    
-    # Try direct socket resolution with original socket (IPv4 only)
-    try:
-        # Use the original socket function directly to avoid any patching issues
-        ip = _original_socket(socket.AF_INET, socket.SOCK_STREAM).getaddrinfo(hostname, port, socket.AF_INET)[0][4][0]
-        logger.info(f"Resolved {hostname} to {ip} using direct socket (IPv4)")
-        return {"host": ip, "port": port, "resolved": True}
-    except Exception as e:
-        logger.warning(f"Direct socket resolution failed for {hostname}: {e}")
-    
-    # Special case for Supabase
-    if "supabase" in hostname.lower():
-        logger.warning(f"Using hardcoded IP for Supabase as last resort")
-        return {"host": "35.239.129.36", "port": port, "resolved": True}
-    
     # If we get here, all resolution attempts failed
-    error_msg = f"All resolution methods failed for {hostname}"
+    error_msg = f"Failed to resolve {hostname} to an IP address"
     logger.error(error_msg)
     raise ValueError(error_msg)
 
@@ -228,45 +207,33 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     
     # Add Supabase-specific settings
     connect_args["options"] = "-c default_transaction_isolation=read committed"
-    
-    last_error = None
-    retry_delay = initial_retry_delay
-    max_retry_delay = 30  # Maximum 30 seconds between retries
-    
     for attempt in range(max_retries):
         try:
-            # Try to resolve host to IP on each attempt
-            try:
+            # Try direct connection first (Supabase handles DNS and load balancing)
+            if attempt == 0:
+                db_url = SQLALCHEMY_DATABASE_URL
+                logger.info("Attempting direct connection to database")
+            # Fall back to DNS resolution if direct connection fails
+            else:
                 resolved = resolve_host_to_ip(original_host, port)
-                host = resolved["host"]
-                logger.info(f"Resolved {original_host} to {host} (attempt {attempt + 1})")
-                
-                # Rebuild URL with resolved IP
-                netloc = f"{parsed_url.username}:{parsed_url.password}@{host}:{port}"
-                parsed_url = parsed_url._replace(netloc=netloc)
-                db_url_resolved = urlunparse(parsed_url)
-                
-                # Force IPv4 in connection args
-                connect_args["hostaddr"] = host
-                
-            except Exception as resolve_error:
-                logger.error(f"DNS resolution failed: {resolve_error}")
-                # If resolution fails, try with original URL as last resort
-                db_url_resolved = SQLALCHEMY_DATABASE_URL
-                if "hostaddr" in connect_args:
-                    del connect_args["hostaddr"]
+                if resolved["resolved"]:
+                    netloc = f"{parsed_url.username}:{parsed_url.password}@{resolved['host']}:{port}" \
+                            if parsed_url.username else f"{resolved['host']}:{port}"
+                    db_url = parsed_url._replace(netloc=netloc).geturl()
+                    logger.info(f"Using resolved IP: {resolved['host']} for {original_host}")
+                else:
+                    db_url = SQLALCHEMY_DATABASE_URL
             
-            # Create engine with current settings
+            # Create the engine with optimized settings for Supabase
             engine = create_engine(
-                db_url_resolved,
-                pool_pre_ping=True,
+                db_url,
+                pool_pre_ping=True,  # Enable connection health checks
                 pool_recycle=300,  # Recycle connections after 5 minutes
-                pool_size=5,
-                max_overflow=10,
-                pool_timeout=30,
+                pool_size=5,  # Maintain up to 5 connections in the pool
+                max_overflow=10,  # Allow up to 10 overflow connections
+                pool_timeout=30,  # Wait up to 30 seconds for a connection from the pool
+                pool_pre_ping_interval=60,  # Check connection health every minute
                 connect_args=connect_args,
-                # Disable connection pooling during connection testing
-                poolclass=None if attempt == 0 else None
             )
             
             # Test the connection with a simple query
@@ -275,22 +242,15 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
                 if result.scalar() != 1:
                     raise Exception("Test query did not return expected result")
             
-            logger.info("Successfully connected to the database")
+            logger.info("Database connection successful")
             return engine
             
         except Exception as e:
-            last_error = e
-            if attempt < max_retries - 1:
-                # Calculate next retry delay with exponential backoff and jitter
-                retry_delay = min(retry_delay * 2, max_retry_delay)
-                jitter = random.uniform(0.8, 1.2)  # Add some randomness
-                actual_delay = min(retry_delay * jitter, max_retry_delay)
-                
-                logger.warning(
-                    f"Connection attempt {attempt + 1}/{max_retries} failed: {str(e)}. "
-                    f"Retrying in {actual_delay:.1f}s..."
-                )
-                time.sleep(actual_delay)
+            wait_time = min(initial_retry_delay * (2 ** attempt), 30)  # Cap at 30s
+            error_msg = f"Connection attempt {attempt + 1}/{max_retries} failed: {str(e)}. Retrying in {wait_time:.1f}s..."
+            logger.warning(error_msg)
+            if attempt < max_retries - 1:  # Don't sleep on the last attempt
+                time.sleep(wait_time)
     
     # If we get here, all retries failed
     error_msg = (
