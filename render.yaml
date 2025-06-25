@@ -2,11 +2,8 @@ services:
   - type: web
     name: farmpower-backend
     runtime: docker
-    buildCommand: |
-      pip install -r /app/farmpower_backend_v2/requirements.txt
-    startCommand: >-
-      cd /app/farmpower_backend_v2 && \
-      uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*' --proxy-headers
+    dockerContext: ./farmpower_backend_v2
+    dockerfilePath: Dockerfile
     
     # Health check configuration
     healthCheckPath: /health
@@ -31,14 +28,36 @@ services:
         value: 3.10.0
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
       - key: PYTHONPATH
         value: /app
+      
+      # Network Optimization
+      - key: NETWORK_IPV6
+        value: "no"
+      - key: RES_OPTIONS
+        value: "rotate timeout:1 attempts:1"
       
       # Database Configuration
       - key: DATABASE_URL
         fromDatabase:
           name: farmpower-db
           property: connectionString
+      - key: SQLALCHEMY_DATABASE_URL
+        fromDatabase:
+          name: farmpower-db
+          property: connectionString
+      
+      # Connection Pool Settings
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: DB_MAX_OVERFLOW
+        value: "10"
+      - key: DB_POOL_RECYCLE
+        value: "300"
+      - key: DB_POOL_TIMEOUT
+        value: "30"
       
       # Supabase Configuration
       - key: NEXT_PUBLIC_SUPABASE_URL
@@ -47,6 +66,35 @@ services:
         sync: false  # Set in Render dashboard
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false  # Set in Render dashboard
+      - key: SUPABASE_URL
+        sync: false  # Set in Render dashboard
+      - key: SUPABASE_KEY
+        sync: false  # Set in Render dashboard
+      
+      # Timezone
+      - key: TZ
+        value: UTC
+    
+    # Build command
+    buildCommand: |
+      pip install --upgrade pip && \
+      pip install -r requirements.txt
+    
+    # Start command using gunicorn with optimized settings
+    startCommand: >-
+      gunicorn app.main:app \
+      --workers 4 \
+      --worker-class uvicorn.workers.UvicornWorker \
+      --bind 0.0.0.0:$PORT \
+      --timeout 120 \
+      --keep-alive 60 \
+      --max-requests 1000 \
+      --max-requests-jitter 50 \
+      --log-level info \
+      --access-logfile - \
+      --error-logfile - \
+      --proxy-protocol \
+      --forwarded-allow-ips="*"
       
       # Security
       - key: SECRET_KEY

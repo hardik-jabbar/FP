@@ -5,20 +5,62 @@ services:
     build:
       context: ./farmpower_backend_v2
       dockerfile: Dockerfile
+      args:
+        - ENVIRONMENT=development
     ports:
       - "8000:8000"
     environment:
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONPATH=/app
+      - PORT=8000
+      - HOST=0.0.0.0
+      - NETWORK_IPV6=no
+      - RES_OPTIONS=rotate timeout:1 attempts:1
+      
+      # Database Configuration (local)
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=farmpower
       - DB_USER=postgres
       - DB_PASSWORD=postgres
+      - SQLALCHEMY_DATABASE_URL=postgresql://postgres:postgres@db:5432/farmpower
+      
+      # Connection Pool Settings
+      - DB_POOL_SIZE=5
+      - DB_MAX_OVERFLOW=10
+      - DB_POOL_RECYCLE=300
+      - DB_POOL_TIMEOUT=30
+      
+      # Security (for development only, use .env in production)
+      - SECRET_KEY=insecure-dev-key-change-in-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      
+      # CORS for development
+      - BACKEND_CORS_ORIGINS=['http://localhost:3000', 'http://127.0.0.1:3000']
+      
+      # Logging
+      - LOG_LEVEL=DEBUG
+      - UVICORN_ACCESS_LOG_LEVEL=info
+      - UVICORN_ERROR_LOG_LEVEL=warning
+      
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./farmpower_backend_v2:/app
       - /app/__pycache__
+    networks:
+      - farmpower-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
 
   db:
     image: postgres:16-alpine
@@ -26,11 +68,66 @@ services:
       - POSTGRES_DB=farmpower
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_INITDB_ARGS=--data-checksums
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    networks:
+      - farmpower-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Add pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - farmpower-network
+    restart: unless-stopped
+
+  # Optional: Add Redis for caching
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass your_redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - farmpower-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+networks:
+  farmpower-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          ip_range: 172.20.5.0/24
 
 volumes:
   postgres_data:
+  redis_data:
+
+# For production-like environment, use:
+# docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# And create a docker-compose.override.yml for local development overrides
