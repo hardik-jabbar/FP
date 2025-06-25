@@ -206,37 +206,41 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
         connect_args["sslmode"] = "require"
     
     # Add Supabase-specific settings
-    connect_args["options"] = "-c default_transaction_isolation=read committed"
     for attempt in range(max_retries):
         try:
-            # Try direct connection first (Supabase handles DNS and load balancing)
-            if attempt == 0:
-                db_url = SQLALCHEMY_DATABASE_URL
-                logger.info("Attempting direct connection to database")
-            # Fall back to DNS resolution if direct connection fails
-            else:
-                resolved = resolve_host_to_ip(original_host, port)
-                if resolved["resolved"]:
-                    netloc = f"{parsed_url.username}:{parsed_url.password}@{resolved['host']}:{port}" \
-                            if parsed_url.username else f"{resolved['host']}:{port}"
-                    db_url = parsed_url._replace(netloc=netloc).geturl()
-                    logger.info(f"Using resolved IP: {resolved['host']} for {original_host}")
-                else:
-                    db_url = SQLALCHEMY_DATABASE_URL
+            # Parse the database URL
+            parsed_url = urlparse(SQLALCHEMY_DATABASE_URL)
             
-            # Create the engine with optimized settings for Supabase
+            # Resolve hostname to IP if needed
+            host = parsed_url.hostname
+            port = parsed_url.port or 5432
+            
+            # Try to resolve hostname to IP
+            try:
+                ip_address = resolve_host_to_ip(host, port)
+                if ip_address:
+                    parsed_url = parsed_url._replace(netloc=f"{parsed_url.username}:{parsed_url.password}@{ip_address}:{port}")
+            except Exception as e:
+                logger.warning(f"Could not resolve hostname {host}: {str(e)}")
+            
+            # Create engine with connection pooling and timeouts
             engine = create_engine(
-                db_url,
+                get_connection_url(parsed_url),
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                pool_recycle=3600,
                 pool_pre_ping=True,  # Enable connection health checks
-                pool_recycle=300,  # Recycle connections after 5 minutes
-                pool_size=5,  # Maintain up to 5 connections in the pool
-                max_overflow=10,  # Allow up to 10 overflow connections
-                pool_timeout=30,  # Wait up to 30 seconds for a connection from the pool
-                pool_pre_ping_interval=60,  # Check connection health every minute
-                connect_args=connect_args,
+                connect_args={
+                    'connect_timeout': 10,
+                    'keepalives': 1,
+                    'keepalives_idle': 30,
+                    'keepalives_interval': 10,
+                    'keepalives_count': 5,
+                }
             )
             
-            # Test the connection with a simple query
+            # Test the connection
             with engine.connect() as conn:
                 result = conn.execute(text("SELECT 1"))
                 if result.scalar() != 1:
@@ -249,13 +253,14 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
             wait_time = min(initial_retry_delay * (2 ** attempt), 30)  # Cap at 30s
             error_msg = f"Connection attempt {attempt + 1}/{max_retries} failed: {str(e)}. Retrying in {wait_time:.1f}s..."
             logger.warning(error_msg)
+            last_error = e
             if attempt < max_retries - 1:  # Don't sleep on the last attempt
                 time.sleep(wait_time)
     
     # If we get here, all retries failed
     error_msg = (
         f"Failed to connect to database after {max_retries} attempts. "
-        f"Last error: {str(last_error) if last_error else 'Unknown error'}"
+        f"Last error: {str(last_error) if 'last_error' in locals() else 'Unknown error'}"
     )
     logger.error(error_msg)
     raise Exception(error_msg)
