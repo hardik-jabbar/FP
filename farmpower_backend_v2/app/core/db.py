@@ -135,13 +135,18 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
             if attempt < max_retries - 1:  # Don't sleep on the last attempt
                 time.sleep(wait_time)
     
-    # If we get here, all retries failed
-    error_msg = (
-        f"Failed to connect to database after {max_retries} attempts. "
-        f"Last error: {str(last_error) if 'last_error' in locals() else 'Unknown error'}"
+    # If we get here, all retries failed - create engine anyway for startup
+    logger.warning("Failed to connect to database during startup, but creating engine for later use")
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_size=5,
+        max_overflow=10,
+        pool_timeout=30,
+        pool_recycle=3600,
+        pool_pre_ping=True,
+        connect_args=connect_args
     )
-    logger.error(error_msg)
-    raise Exception(error_msg)
+    return engine
 
 def get_db() -> Generator[DBSession, None, None]:
     """
@@ -164,8 +169,16 @@ def get_db() -> Generator[DBSession, None, None]:
         db.close()
 
 # Create database engine and session
-engine = create_db_engine()
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+try:
+    engine = create_db_engine()
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    logger.info("✅ Database engine and session created successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to create database engine: {str(e)}")
+    # Create a dummy engine for startup
+    from sqlalchemy import create_engine
+    engine = create_engine("sqlite:///dummy.db")
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Update exports to include all necessary components
 __all__ = ['Base', 'SessionLocal', 'engine', 'get_db', 'Session']

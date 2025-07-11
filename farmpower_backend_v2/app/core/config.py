@@ -28,9 +28,9 @@ for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE
     source = 'Environment' if key in os.environ and not os.getenv('DOTENV_LOADED') else '.env file'
     logger.info(f"{key}: {value} (from {source})")
 
-# Force local database configuration if not in production
-if os.getenv('ENVIRONMENT', 'development') != 'production':
-    logger.info("\n=== Forcing local database configuration ===")
+# Only force local database configuration if DATABASE_URL is not set and we're in development
+if os.getenv('ENVIRONMENT', 'development') != 'production' and not os.getenv('DATABASE_URL'):
+    logger.info("\n=== Forcing local database configuration (development mode) ===")
     os.environ['DB_HOST'] = 'localhost'
     os.environ['DB_PORT'] = '5432'
     os.environ['DB_NAME'] = 'farmpower'
@@ -42,6 +42,10 @@ if os.getenv('ENVIRONMENT', 'development') != 'production':
     # Log the forced configuration
     for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE_URL']:
         logger.info(f"FORCED {key}: {os.getenv(key)}")
+else:
+    logger.info("\n=== Using provided DATABASE_URL (production mode) ===")
+    if os.getenv('DATABASE_URL'):
+        logger.info(f"Using DATABASE_URL from environment: {os.getenv('DATABASE_URL').split('@')[-1] if '@' in os.getenv('DATABASE_URL', '') else '***'}")
 
 def get_database_url() -> str:
     """Get and properly format the database URL with URL-encoded credentials."""

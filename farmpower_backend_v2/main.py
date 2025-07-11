@@ -73,7 +73,7 @@ try:
     logger.info("✅ Database tables created/verified")
 except Exception as e:
     logger.error(f"❌ Failed to create database tables: {str(e)}")
-    raise
+    # Don't raise here, let the application start
 
 # Import all routers using absolute imports
 try:
@@ -95,7 +95,11 @@ except ImportError as e:
 
 # Create database tables (if they don't exist yet)
 # This is useful for development. For production, use migrations (e.g., Alembic).
-Base.metadata.create_all(bind=engine, checkfirst=True) # Ensures all imported models' tables are created
+try:
+    Base.metadata.create_all(bind=engine, checkfirst=True) # Ensures all imported models' tables are created
+except Exception as e:
+    logger.error(f"❌ Failed to create database tables: {str(e)}")
+    # Don't raise here, let the application start
 
 # Security middleware for adding security headers
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
