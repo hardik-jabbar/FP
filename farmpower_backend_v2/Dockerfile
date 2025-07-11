@@ -1,5 +1,5 @@
-# Use Python 3.10 slim image with additional CA certificates
-FROM python:3.10-slim AS builder
+# Use Python 3.13 slim image with additional CA certificates
+FROM python:3.13-slim AS builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -29,7 +29,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Final stage
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python dependencies from builder
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
@@ -60,7 +60,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 RUN chmod +x run.py
 
 # Set default command with proper signal handling
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "4", "--timeout", "120", "--keep-alive", "60", "app.main:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn.workers.UvicornWorker", "--workers", "4", "--timeout", "120", "--keep-alive", "60", "main:app"]
 
 # Add custom DNS configuration
 RUN echo "options single-request" >> /etc/resolv.conf && \

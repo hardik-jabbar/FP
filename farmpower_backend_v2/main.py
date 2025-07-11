@@ -18,7 +18,11 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import rate limit middleware after modifying sys.path
-from middleware.rate_limit import rate_limit_middleware
+try:
+    from middleware.rate_limit import rate_limit_middleware
+except ImportError as e:
+    logging.warning(f"Could not import rate limit middleware: {e}")
+    rate_limit_middleware = lambda app: app
 
 # Load environment variables
 load_dotenv()
@@ -72,18 +76,22 @@ except Exception as e:
     raise
 
 # Import all routers using absolute imports
-from app.routers import users as user_router
-from app.routers import tractors as tractor_router
-from app.routers import fields as field_router
-from app.routers import crops as crop_router
-from app.routers import services as service_booking_router
-from app.routers import parts as part_router
-from app.routers import notifications as notification_router
-from app.routers import messages as message_router
-from app.routers import admin as admin_router
-from app.routers import crop_calculator as crop_calculator_router
-from app.routers import auth_json as auth_json_router
-from app.routers import marketplace
+try:
+    from app.routers import users as user_router
+    from app.routers import tractors as tractor_router
+    from app.routers import fields as field_router
+    from app.routers import crops as crop_router
+    from app.routers import services as service_booking_router
+    from app.routers import parts as part_router
+    from app.routers import notifications as notification_router
+    from app.routers import messages as message_router
+    from app.routers import admin as admin_router
+    from app.routers import crop_calculator as crop_calculator_router
+    from app.routers import auth_json as auth_json_router
+    from app.routers import marketplace
+except ImportError as e:
+    logger.error(f"❌ Failed to import routers: {str(e)}")
+    raise
 
 # Create database tables (if they don't exist yet)
 # This is useful for development. For production, use migrations (e.g., Alembic).

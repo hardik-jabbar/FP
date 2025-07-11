@@ -1,9 +1,47 @@
 import os
 import urllib.parse
+import logging
+import sys
 from typing import Optional
-from dotenv import load_dotenv
+from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()  # Looks for .env in current working directory or parent directories
+# Set up logging
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+logger = logging.getLogger(__name__)
+
+# Find and load .env file
+env_path = find_dotenv(usecwd=True)
+if not env_path:
+    env_path = Path(__file__).parent.parent.parent / '.env'
+    logger.warning(f"No .env file found, using default at: {env_path}")
+else:
+    logger.info(f"Loading environment from: {env_path}")
+
+# Load environment variables, overriding any existing ones
+load_dotenv(env_path, override=True)
+
+# Debug: Print environment variables and their sources
+logger.info("\n=== Environment Variables ===")
+for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE_URL']:
+    value = os.getenv(key, 'Not Set')
+    source = 'Environment' if key in os.environ and not os.getenv('DOTENV_LOADED') else '.env file'
+    logger.info(f"{key}: {value} (from {source})")
+
+# Force local database configuration if not in production
+if os.getenv('ENVIRONMENT', 'development') != 'production':
+    logger.info("\n=== Forcing local database configuration ===")
+    os.environ['DB_HOST'] = 'localhost'
+    os.environ['DB_PORT'] = '5432'
+    os.environ['DB_NAME'] = 'farmpower'
+    os.environ['DB_USER'] = 'postgres'
+    os.environ['DB_PASSWORD'] = 'postgres'
+    os.environ['DATABASE_URL'] = 'postgresql://postgres:postgres@localhost:5432/farmpower'
+    os.environ['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/farmpower'
+    
+    # Log the forced configuration
+    for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE_URL']:
+        logger.info(f"FORCED {key}: {os.getenv(key)}")
 
 def get_database_url() -> str:
     """Get and properly format the database URL with URL-encoded credentials."""

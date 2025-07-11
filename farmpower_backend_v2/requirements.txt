@@ -12,18 +12,16 @@ psycopg2-binary>=2.9.9
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.9
-python-keycloak>=2.16.6
 
 # Pydantic
 pydantic[email]>=2.6.1
 pydantic-settings>=2.1.0
 email-validator>=2.1.0
 
-# Supabase and related packages - pinned to specific compatible versions
-# Using postgrest instead of postgrest-py for better httpx compatibility
+# Supabase and related packages
 supabase>=2.15.0,<2.16.0
 gotrue>=2.11.4,<3.0.0
-postgrest>=1.0.0,<2.0.0  # Using the newer postgrest package
+postgrest>=1.0.0,<2.0.0
 realtime>=2.4.0,<2.5.0
 httpx>=0.26.0,<0.29.0
 
@@ -41,3 +39,7 @@ slowapi>=0.1.8
 # Utilities
 python-slugify>=8.0.1
 python-dateutil>=2.8.2
+
+# Additional dependencies that might be needed
+jinja2>=3.1.0
+aiofiles>=23.0.0

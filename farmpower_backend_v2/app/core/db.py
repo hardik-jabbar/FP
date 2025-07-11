@@ -2,65 +2,13 @@ import os
 import socket
 import time
 import logging
-import random
-import urllib3
-import dns.resolver
 import sys
-from typing import Any, Dict, Generator, List, Optional, Union, cast
-from urllib.parse import urlparse, urlunparse
+from typing import Any, Dict, Generator, Optional, Union
+from urllib.parse import urlparse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Disable IPv6 for all connections
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Force IPv4 only for all socket operations
-socket.AF_INET6 = socket.AF_INET
-socket.has_ipv6 = False
-
-# Configure DNS resolver to only return IPv4 addresses
-dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
-dns.resolver.default_resolver.nameservers = ['8.8.8.8', '8.8.4.4']  # Use Google DNS
-
-# Save the original socket functions
-_original_socket = socket.socket
-_original_getaddrinfo = socket.getaddrinfo
-
-def patch_socket_for_ipv4():
-    """Monkey patch socket to force IPv4 and prevent IPv6 usage."""
-    # Patch socket.socket
-    def patched_socket(family=socket.AF_INET, *args, **kwargs):
-        # Force IPv4 only
-        return _original_socket(socket.AF_INET, *args, **kwargs)
-    
-    # Patch socket.getaddrinfo
-    def patched_getaddrinfo(host, port, family=0, *args, **kwargs):
-        # Force IPv4 only
-        if family == 0 or family == socket.AF_UNSPEC:
-            family = socket.AF_INET
-        elif family == socket.AF_INET6:
-            # If IPv6 is explicitly requested, still force IPv4
-            family = socket.AF_INET
-        
-        # Remove any existing family from kwargs to avoid duplicates
-        kwargs.pop('family', None)
-        
-        # Call original getaddrinfo with forced IPv4
-        return _original_getaddrinfo(host, port, family=family, *args, **kwargs)
-    
-    # Apply patches
-    socket.socket = patched_socket
-    socket.getaddrinfo = patched_getaddrinfo
-    
-    # Disable IPv6 at the socket module level
-    socket.has_ipv6 = False
-    
-    logger.info("Patched socket to force IPv4")
-
-# Apply socket patches
-patch_socket_for_ipv4()
 
 # SQLAlchemy imports
 from sqlalchemy import create_engine, text, exc
@@ -72,14 +20,6 @@ Base = declarative_base()
 
 # Export Base for use in models
 __all__ = ['Base', 'SessionLocal', 'engine', 'get_db', 'Session']
-
-# Get database URL from environment variables
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
-if not SQLALCHEMY_DATABASE_URL:
-    error_msg = "Error: DATABASE_URL environment variable is not set."
-    logger.error(error_msg)
-    print(error_msg, file=sys.stderr)
-    sys.exit(1)
 
 from app.core.config import settings
 
@@ -106,39 +46,6 @@ def get_connection_url(
         port=port_override or (parsed_url.port or 5432),
         database=parsed_url.path.lstrip('/')
     )
-
-def resolve_host_to_ip(hostname: str, port: int = 5432) -> Dict[str, Any]:
-    """Resolve a hostname to its IPv4 address with multiple fallback strategies."""
-    if not hostname or hostname == 'localhost':
-        return {"host": "127.0.0.1", "port": port, "resolved": False}
-    
-    # Special handling for Supabase
-    if "supabase" in hostname.lower():
-        # Try direct connection first (Supabase handles DNS)
-        logger.info("Using direct connection to Supabase")
-        return {"host": hostname, "port": port, "resolved": False}
-    
-    # Skip resolution for IP addresses
-    try:
-        socket.inet_pton(socket.AF_INET, hostname)
-        return {"host": hostname, "port": port, "resolved": False}
-    except (socket.error, OSError):
-        pass
-    
-    # Try system DNS resolution first with explicit IPv4
-    try:
-        addr_info = socket.getaddrinfo(hostname, port, family=socket.AF_INET, type=socket.SOCK_STREAM)
-        if addr_info:
-            ip = addr_info[0][4][0]  # Get the first resolved IP
-            logger.info(f"Resolved {hostname} to {ip} using system DNS (IPv4)")
-            return {"host": ip, "port": port, "resolved": True}
-    except Exception as e:
-        logger.warning(f"System DNS resolution failed for {hostname}: {e}")
-    
-    # If we get here, all resolution attempts failed
-    error_msg = f"Failed to resolve {hostname} to an IP address"
-    logger.error(error_msg)
-    raise ValueError(error_msg)
 
 def test_connection(engine: Engine, max_attempts: int = 3) -> bool:
     """Test database connection with retries."""
@@ -183,14 +90,6 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     if not SQLALCHEMY_DATABASE_URL:
         raise ValueError("DATABASE_URL is not set in environment variables")
     
-    # Ensure socket is patched for IPv4
-    patch_socket_for_ipv4()
-    
-    # Parse the database URL
-    parsed_url = urlparse(SQLALCHEMY_DATABASE_URL)
-    original_host = parsed_url.hostname or ""
-    port = parsed_url.port or 5432
-    
     # Connection arguments with aggressive timeouts and keepalives
     connect_args = {
         "connect_timeout": 10,
@@ -208,36 +107,15 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     # Add Supabase-specific settings
     for attempt in range(max_retries):
         try:
-            # Parse the database URL
-            parsed_url = urlparse(SQLALCHEMY_DATABASE_URL)
-            
-            # Resolve hostname to IP if needed
-            host = parsed_url.hostname
-            port = parsed_url.port or 5432
-            
-            # Try to resolve hostname to IP
-            try:
-                ip_address = resolve_host_to_ip(host, port)
-                if ip_address:
-                    parsed_url = parsed_url._replace(netloc=f"{parsed_url.username}:{parsed_url.password}@{ip_address}:{port}")
-            except Exception as e:
-                logger.warning(f"Could not resolve hostname {host}: {str(e)}")
-            
             # Create engine with connection pooling and timeouts
             engine = create_engine(
-                get_connection_url(parsed_url),
+                SQLALCHEMY_DATABASE_URL,
                 pool_size=5,
                 max_overflow=10,
                 pool_timeout=30,
                 pool_recycle=3600,
                 pool_pre_ping=True,  # Enable connection health checks
-                connect_args={
-                    'connect_timeout': 10,
-                    'keepalives': 1,
-                    'keepalives_idle': 30,
-                    'keepalives_interval': 10,
-                    'keepalives_count': 5,
-                }
+                connect_args=connect_args
             )
             
             # Test the connection

@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from slowapi.util import get_remote_address  # For consistency if needed
+from slowapi.util import get_remote_address
 from slowapi import Limiter, _rate_limit_exceeded_handler
 
 from ..core.db import get_db
@@ -16,9 +16,9 @@ from ..services import user_service
 from ..core.security import verify_password, create_access_token
 from ..models.user import User as UserModel
 
-# Re-use shared limiter instance from middleware to ensure global counters
+# Create a local limiter instance if global one is not available
 try:
-    from middleware.rate_limit import limiter as global_limiter  # type: ignore
+    from middleware.rate_limit import limiter as global_limiter
 except ImportError:
     global_limiter = Limiter(key_func=get_remote_address)
 
