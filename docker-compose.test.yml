@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  test:
+    build:
+      context: ./farmpower_backend_v2
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - ENVIRONMENT=test
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONPATH=/app
+      - TESTING=True
+      - DEBUG=False
+      # Database configuration for tests
+      - DATABASE_URL=postgresql://test:test@test-db:5432/test_db
+      - POSTGRES_SERVER=test-db
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=test_db
+      # Disable rate limiting for tests
+      - RATELIMIT_ENABLED=False
+      # Disable authentication for tests (if applicable)
+      - AUTH_DISABLED=True
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    volumes:
+      - ./farmpower_backend_v2:/app
+      - /app/__pycache__
+    command: >
+      bash -c "
+      # Wait for database to be ready
+      while ! pg_isready -h test-db -U test -d test_db; do
+        echo 'Waiting for PostgreSQL...'
+        sleep 1
+      done &&
+      # Run database migrations
+      alembic upgrade head &&
+      # Run tests with coverage
+      pytest --cov=app --cov-report=term-missing --cov-report=xml:/tmp/coverage.xml -v tests/"
+
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=test_db
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Add test data if needed
+    # entrypoint: ["/docker-entrypoint.sh", "postgres", "-c", "log_statement=all"]
+
+  test-redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass testpass
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "testpass", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - test_redis_data:/data
+
+  # Test coverage report server (optional)
+  coverage:
+    image: nginx:alpine
+    ports:
+      - "8001:80"
+    volumes:
+      - ./htmlcov:/usr/share/nginx/html:ro
+    depends_on:
+      - test
+
+  # Linting and code quality
+  lint:
+    build:
+      context: ./farmpower_backend_v2
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./farmpower_backend_v2:/app
+    command: >
+      bash -c "
+      echo 'Running black...' && black --check --diff . &&
+      echo 'Running isort...' && isort --check-only --diff . &&
+      echo 'Running flake8...' && flake8 . &&
+      echo 'Running mypy...' && mypy . &&
+      echo 'All checks passed! ✅'"
+
+  # Security scanning
+  security:
+    image: pyupio/safety:latest
+    volumes:
+      - ./farmpower_backend_v2/requirements.txt:/tmp/requirements.txt
+    command: check -r /tmp/requirements.txt --full-report
+
+  # Dependency vulnerability scanning
+  dependency-check:
+    image: owasp/dependency-check:latest
+    volumes:
+      - ./farmpower_backend_v2:/src
+      - dependency-check-cache:/usr/share/dependency-check/data
+      - dependency-check-report:/report
+    command: >
+      --scan /src
+      --format "HTML"
+      --project "FarmPower Backend"
+      --out /report
+      --enableExperimental
+      --failOnCVSS 8
+
+volumes:
+  test_postgres_data:
+  test_redis_data:
+  dependency-check-cache:
+  dependency-check-report:

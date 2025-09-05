@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import time
 from contextlib import contextmanager
@@ -18,11 +19,17 @@ logger = logging.getLogger(__name__)
 # Get database URL from settings
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 
-if not SQLALCHEMY_DATABASE_URL:
-    logger.error("DATABASE_URL environment variable is not set")
-    print("Error: DATABASE_URL environment variable is not set.", file=sys.stderr)
-    print("Please create a .env file or set the environment variable.", file=sys.stderr)
-    sys.exit(1)
+# Check if DATABASE_URL is properly set and not a placeholder
+if not SQLALCHEMY_DATABASE_URL or SQLALCHEMY_DATABASE_URL == "<IPv4>" or "localhost" in SQLALCHEMY_DATABASE_URL:
+    logger.error(f"DATABASE_URL environment variable is not properly set: {SQLALCHEMY_DATABASE_URL}")
+    print("Error: DATABASE_URL environment variable is not properly set.", file=sys.stderr)
+    print("Please ensure the database connection string is properly configured in Render.", file=sys.stderr)
+    # Don't exit immediately in production - let the app start and handle connection errors gracefully
+    if os.getenv('ENVIRONMENT', 'development') == 'production':
+        logger.warning("Running in production mode - will attempt to connect later")
+        SQLALCHEMY_DATABASE_URL = "postgresql://placeholder:placeholder@placeholder:5432/placeholder"
+    else:
+        sys.exit(1)
 
 # Connection pool settings
 POOL_SIZE = 5

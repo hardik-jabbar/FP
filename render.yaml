@@ -39,12 +39,8 @@ services:
       - key: RES_OPTIONS
         value: "rotate timeout:1 attempts:1"
       
-      # Database Configuration
+      # Database Configuration - Use the database connection string
       - key: DATABASE_URL
-        fromDatabase:
-          name: farmpower-db
-          property: connectionString
-      - key: SQLALCHEMY_DATABASE_URL
         fromDatabase:
           name: farmpower-db
           property: connectionString
@@ -59,17 +55,45 @@ services:
       - key: DB_POOL_TIMEOUT
         value: "30"
       
-      # Supabase Configuration
+      # Security
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: ALLOWED_ORIGINS
+        value: "https://your-frontend-domain.com,http://localhost:3000"
+      - key: SECURE_PROXY_SSL_HEADER
+        value: "('HTTP_X_FORWARDED_PROTO', 'https')"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: CSRF_COOKIE_SECURE
+        value: "true"
+      - key: SECURE_SSL_REDIRECT
+        value: "true"
+      
+      # Supabase Configuration (optional - set in Render dashboard if needed)
       - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false  # Set in Render dashboard
+        sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
-        sync: false  # Set in Render dashboard
+        sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false  # Set in Render dashboard
+        sync: false
       - key: SUPABASE_URL
-        sync: false  # Set in Render dashboard
+        sync: false
       - key: SUPABASE_KEY
-        sync: false  # Set in Render dashboard
+        sync: false
+      
+      # Optional Settings
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: WORKERS
+        value: "2"
+      - key: TIMEOUT
+        value: "120"
+      - key: KEEP_ALIVE
+        value: "5"
       
       # Timezone
       - key: TZ
@@ -95,34 +119,7 @@ services:
       --error-logfile - \
       --proxy-protocol \
       --forwarded-allow-ips="*"
-      
-      # Security
-      - key: SECRET_KEY
-        generateValue: true
-      - key: JWT_SECRET
-        generateValue: true
-      - key: ALLOWED_HOSTS
-        value: "*"
-      - key: ALLOWED_ORIGINS
-        value: "https://your-frontend-domain.com,http://localhost:3000"
-      - key: SECURE_PROXY_SSL_HEADER
-        value: "('HTTP_X_FORWARDED_PROTO', 'https')"
-      - key: SESSION_COOKIE_SECURE
-        value: "true"
-      - key: CSRF_COOKIE_SECURE
-        value: "true"
-      - key: SECURE_SSL_REDIRECT
-        value: "true"
-      
-      # Optional Settings
-      - key: LOG_LEVEL
-        value: "INFO"
-      - key: WORKERS
-        value: "2"
-      - key: TIMEOUT
-        value: "120"
-      - key: KEEP_ALIVE
-        value: "5"
+    
     plan: free
     numInstances: 1
     region: oregon  # Choose your preferred region

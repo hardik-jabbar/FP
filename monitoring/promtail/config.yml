@@ -1,0 +1,211 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    batchwait: 5s
+    batchsize: 1048576
+    timeout: 10s
+
+scrape_configs:
+  # Logs from Docker containers
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["logging=promtail"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_file']
+        target_label: 'logfile'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container_name'
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'image'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'project'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_container_number']
+        target_label: 'container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_oneoff']
+        target_label: 'oneoff'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_version']
+        target_label: 'compose_version'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_config_hash']
+        target_label: 'config_hash'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_working_dir']
+        target_label: 'project_working_dir'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_config_files']
+        target_label: 'project_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_container_number']
+        target_label: 'service_container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_number']
+        target_label: 'service_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task']
+        target_label: 'task'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_hash']
+        target_label: 'task_hash'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_oneoff']
+        target_label: 'oneoff'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_config_files']
+        target_label: 'config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_config_files']
+        target_label: 'project_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_config_files']
+        target_label: 'service_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_config_files']
+        target_label: 'task_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_container_number']
+        target_label: 'container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_container_number']
+        target_label: 'service_container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_number']
+        target_label: 'service_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_hash']
+        target_label: 'task_hash'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_oneoff']
+        target_label: 'oneoff'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_config_files']
+        target_label: 'config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_config_files']
+        target_label: 'project_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_config_files']
+        target_label: 'service_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_config_files']
+        target_label: 'task_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_container_number']
+        target_label: 'container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_container_number']
+        target_label: 'service_container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_number']
+        target_label: 'service_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_hash']
+        target_label: 'task_hash'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_oneoff']
+        target_label: 'oneoff'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_config_files']
+        target_label: 'config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_config_files']
+        target_label: 'project_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_config_files']
+        target_label: 'service_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_config_files']
+        target_label: 'task_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_container_number']
+        target_label: 'container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_container_number']
+        target_label: 'service_container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_number']
+        target_label: 'service_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_hash']
+        target_label: 'task_hash'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_oneoff']
+        target_label: 'oneoff'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_config_files']
+        target_label: 'config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_config_files']
+        target_label: 'project_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_config_files']
+        target_label: 'service_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_config_files']
+        target_label: 'task_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_container_number']
+        target_label: 'container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_container_number']
+        target_label: 'service_container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_number']
+        target_label: 'service_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_hash']
+        target_label: 'task_hash'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_oneoff']
+        target_label: 'oneoff'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_config_files']
+        target_label: 'config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_config_files']
+        target_label: 'project_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_config_files']
+        target_label: 'service_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_config_files']
+        target_label: 'task_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_container_number']
+        target_label: 'container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_container_number']
+        target_label: 'service_container_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_number']
+        target_label: 'service_number'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_hash']
+        target_label: 'task_hash'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_oneoff']
+        target_label: 'oneoff'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_config_files']
+        target_label: 'config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project_config_files']
+        target_label: 'project_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service_config_files']
+        target_label: 'service_config_files'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_task_config_files']
+        target_label: 'task_config_files'
+    pipeline_stages:
+      - docker: {}
+      - json:
+          expressions:
+            stream: stream
+            attrs: attrs
+            time: time
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+      - labels:
+          stream:
+      - output:
+          source: log
+
+  # Logs from files
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\w+\s+\d+\s+\d+:\d+:\d+)\s+(?P<hostname>\S+)\s+(?P<application>\w+)(?:\[(?P<pid>\d+)\])?:\s+(?P<message>.+)$'
+      - labels:
+          application:
+      - output:
+          source: message
+
+  # Logs from journald
+  - job_name: journal
+    journal:
+      max_age: 12h
+      labels:
+        job: systemd-journal
+    relabel_configs:
+      - source_labels: ['__journal__systemd_unit']
+        target_label: 'unit'
+      - source_labels: ['__journal__hostname']
+        target_label: 'hostname'
+      - source_labels: ['__journal_syslog_identifier']
+        target_label: 'syslog_identifier'
+    pipeline_stages:
+      - match:
+          selector: '{job="systemd-journal"}'
+          stages:
+            - regex:
+                expression: '^(?P<timestamp>\w+\s+\d+\s+\d+:\d+:\d+)\s+(?P<hostname>\S+)\s+(?P<application>\w+)(?:\[(?P<pid>\d+)\])?:\s+(?P<message>.+)$'
+            - labels:
+                application:
+            - output:
+                source: message

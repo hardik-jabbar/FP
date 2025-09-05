@@ -26,11 +26,18 @@ from app.core.config import settings
 # Get the database URL from settings
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 
-if not SQLALCHEMY_DATABASE_URL:
-    error_msg = "Error: DATABASE_URL environment variable is not set."
+# Check if DATABASE_URL is properly set and not a placeholder
+if not SQLALCHEMY_DATABASE_URL or SQLALCHEMY_DATABASE_URL == "<IPv4>" or "placeholder" in SQLALCHEMY_DATABASE_URL:
+    error_msg = f"Error: DATABASE_URL environment variable is not properly set: {SQLALCHEMY_DATABASE_URL}"
     logger.error(error_msg)
     print(error_msg, file=sys.stderr)
-    sys.exit(1)
+    print("Please ensure the database connection string is properly configured in Render.", file=sys.stderr)
+    # Don't exit immediately in production - let the app start and handle connection errors gracefully
+    if os.getenv('ENVIRONMENT', 'development') == 'production':
+        logger.warning("Running in production mode - will attempt to connect later")
+        SQLALCHEMY_DATABASE_URL = "postgresql://placeholder:placeholder@placeholder:5432/placeholder"
+    else:
+        sys.exit(1)
 
 def get_connection_url(
     parsed_url: urlparse,
@@ -168,17 +175,25 @@ def get_db() -> Generator[DBSession, None, None]:
     finally:
         db.close()
 
-# Create database engine and session
-try:
-    engine = create_db_engine()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    logger.info("✅ Database engine and session created successfully")
-except Exception as e:
-    logger.error(f"❌ Failed to create database engine: {str(e)}")
-    # Create a dummy engine for startup
-    from sqlalchemy import create_engine
-    engine = create_engine("sqlite:///dummy.db")
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create database engine and session with graceful fallback
+def create_engine_with_fallback():
+    """Create database engine with fallback for startup issues."""
+    try:
+        if SQLALCHEMY_DATABASE_URL and "placeholder" not in SQLALCHEMY_DATABASE_URL:
+            engine = create_db_engine()
+            logger.info("✅ Database engine and session created successfully")
+            return engine
+        else:
+            logger.warning("⚠️ Using fallback database engine due to invalid DATABASE_URL")
+            return create_engine("sqlite:///./fallback.db")
+    except Exception as e:
+        logger.error(f"❌ Failed to create database engine: {str(e)}")
+        logger.warning("⚠️ Using fallback SQLite database for startup")
+        return create_engine("sqlite:///./fallback.db")
+
+# Create engine and session
+engine = create_engine_with_fallback()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Update exports to include all necessary components
 __all__ = ['Base', 'SessionLocal', 'engine', 'get_db', 'Session']

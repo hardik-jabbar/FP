@@ -1,0 +1,158 @@
+modules:
+  # HTTP/HTTPS probe
+  http_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200, 301, 302, 303, 307, 308]
+      method: GET
+      no_follow_redirects: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: false
+      headers:
+        Accept: "*/*"
+        User-Agent: "Blackbox Exporter/0.24.0"
+
+  # HTTP/HTTPS probe with basic auth
+  http_basic_auth:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      valid_status_codes: [200, 301, 302, 303, 307, 308]
+      no_follow_redirects: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
+      basic_auth:
+        username: "username"
+        password: "password"
+
+  # TCP probe
+  tcp_connect:
+    prober: tcp
+    timeout: 10s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      query_response:
+        - expect: "^SSH-2.0-.*"
+        - send: "SSH-2.0-Blackbox-Exporter-Prober"
+
+  # ICMP probe
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+
+  # DNS probe
+  dns:
+    prober: dns
+    dns:
+      preferred_ip_protocol: "ip4"
+      query_name: "example.com"
+      query_type: "A"
+
+  # TLS probe
+  tls:
+    prober: tcp
+    timeout: 10s
+    tcp:
+      tls: true
+      tls_config:
+        insecure_skip_verify: true
+
+  # gRPC probe
+  grpc:
+    prober: grpc
+    grpc:
+      tls: true
+      tls_config:
+        insecure_skip_verify: true
+
+  # PostgreSQL probe
+  postgres:
+    prober: postgres
+    timeout: 10s
+    postgres:
+      dsn: "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
+      tls_config:
+        insecure_skip_verify: true
+
+  # Redis probe
+  redis:
+    prober: redis
+    timeout: 5s
+    redis:
+      password: "${REDIS_PASSWORD}"
+      tls_config:
+        insecure_skip_verify: true
+
+  # HTTP API probe with JSON validation
+  http_json:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      headers:
+        Accept: "application/json"
+      fail_if_not_matches_regexp:
+        - '"status":\s*"(up|ok|healthy)"'
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: true
+
+  # HTTP probe with body validation
+  http_body:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      fail_if_body_not_matches_regexp:
+        - '\b(OK|ok|running|healthy)\b'
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: true
+
+  # HTTP probe with header validation
+  http_headers:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      fail_if_header_not_matches:
+        - header: Content-Type
+          regexp: '^text/.*'
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: true
+
+  # HTTP probe with SSL verification
+  http_ssl_verify:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: false
+        ca_file: /etc/ssl/certs/ca-certificates.crt
+
+  # HTTP probe with POST request
+  http_post:
+    prober: http
+    timeout: 10s
+    http:
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: '{"query":"{status}"}'
+      preferred_ip_protocol: "ip4"
+      tls_config:
+        insecure_skip_verify: true

@@ -126,13 +126,26 @@ app = FastAPI(
 @app.get("/health", response_model=Dict[str, Any])
 async def health_check() -> Dict[str, Any]:
     """Health check endpoint for monitoring and container orchestration."""
-    return {
+    health_status = {
         "status": "healthy",
         "environment": ENVIRONMENT,
         "host": HOST,
         "port": PORT,
-        "debug": ENVIRONMENT == "development"
+        "debug": ENVIRONMENT == "development",
+        "database": "unknown"
     }
+    
+    # Test database connection
+    try:
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        db.close()
+        health_status["database"] = "connected"
+    except Exception as e:
+        health_status["database"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    return health_status
 
 # Get the absolute path to the 'FARMPOWER' directory
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
