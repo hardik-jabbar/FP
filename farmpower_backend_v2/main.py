@@ -46,6 +46,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Run startup check first
+try:
+    from startup_check import main as startup_check
+    if not startup_check():
+        logger.error("❌ Startup check failed. Exiting.")
+        sys.exit(1)
+except ImportError:
+    logger.warning("⚠️ Startup check script not found, skipping...")
+except Exception as e:
+    logger.warning(f"⚠️ Startup check failed: {e}, continuing...")
+
 # Import database and models using absolute imports
 try:
     from app.core.db import Base, engine, SessionLocal

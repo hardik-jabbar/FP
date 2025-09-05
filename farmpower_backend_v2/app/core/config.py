@@ -51,6 +51,55 @@ def get_database_url() -> str:
     """Get and properly format the database URL with URL-encoded credentials."""
     db_url = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
     
+    # Log the original URL for debugging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Raw DATABASE_URL from environment: {db_url}")
+    
+    # Check for placeholder values that indicate configuration issues
+    if "<IPv4>" in db_url or "placeholder" in db_url:
+        logger.error(f"❌ DATABASE_URL contains placeholder value: {db_url}")
+        logger.error("This indicates the Render database connection string is not properly configured.")
+        logger.error("Attempting to construct connection string from individual components...")
+        
+        # Try to construct the connection string from individual components
+        db_host = os.getenv("DB_HOST")
+        db_port = os.getenv("DB_PORT", "5432")
+        db_name = os.getenv("DB_NAME")
+        db_user = os.getenv("DB_USER")
+        db_password = os.getenv("DB_PASSWORD")
+        
+        logger.info(f"DB_HOST: {db_host}")
+        logger.info(f"DB_PORT: {db_port}")
+        logger.info(f"DB_NAME: {db_name}")
+        logger.info(f"DB_USER: {db_user}")
+        logger.info(f"DB_PASSWORD: {'***' if db_password else 'Not Set'}")
+        
+        if all([db_host, db_name, db_user, db_password]):
+            # Construct the connection string
+            from urllib.parse import quote_plus
+            constructed_url = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_name}"
+            logger.info(f"✅ Constructed database URL from components: postgresql://{db_user}:***@{db_host}:{db_port}/{db_name}")
+            return constructed_url
+        else:
+            logger.error("❌ Missing required database components:")
+            logger.error(f"  DB_HOST: {'✅' if db_host else '❌'}")
+            logger.error(f"  DB_NAME: {'✅' if db_name else '❌'}")
+            logger.error(f"  DB_USER: {'✅' if db_user else '❌'}")
+            logger.error(f"  DB_PASSWORD: {'✅' if db_password else '❌'}")
+            logger.error("Please check:")
+            logger.error("1. Database 'farmpower-db' exists in Render")
+            logger.error("2. Database is properly linked to the service")
+            logger.error("3. Environment variables are set correctly")
+            
+            # In production, try to use a fallback or exit gracefully
+            if os.getenv('ENVIRONMENT', 'development') == 'production':
+                logger.warning("⚠️ Using SQLite fallback in production due to invalid DATABASE_URL")
+                return "sqlite:///./fallback.db"
+            else:
+                logger.error("❌ Cannot proceed with invalid DATABASE_URL in development")
+                return db_url
+    
     # If it's a SQLite URL, ensure it's properly formatted
     if db_url.startswith("sqlite"):
         if not db_url.startswith("sqlite:///"):
@@ -58,8 +107,6 @@ def get_database_url() -> str:
         return db_url
     
     # Log the original URL (without password) for debugging
-    import logging
-    logger = logging.getLogger(__name__)
     safe_url = db_url.split('@')[-1] if '@' in db_url else db_url
     logger.info(f"Original database URL format (host only): postgresql://...@{safe_url}")
     
