@@ -58,8 +58,26 @@ def get_database_url() -> str:
     
     # Check for placeholder values that indicate configuration issues
     if "<IPv4>" in db_url or "placeholder" in db_url:
-        logger.error(f"❌ DATABASE_URL contains placeholder value: {db_url}")
-        logger.error("This indicates the Render database connection string is not properly configured.")
+        logger.warning(f"⚠️ DATABASE_URL contains placeholder value: {db_url}")
+        
+        # Check if this is a Supabase connection string
+        if "supabase.co" in db_url:
+            logger.info("🔍 Detected Supabase connection string with placeholder")
+            logger.info("Attempting to fix Supabase connection string...")
+            
+            # Remove the placeholder from the end of the URL
+            if "?hostaddr=<IPv4>" in db_url:
+                fixed_url = db_url.replace("?hostaddr=<IPv4>", "")
+                logger.info(f"✅ Fixed Supabase URL by removing placeholder: {fixed_url}")
+                return fixed_url
+            elif "&hostaddr=<IPv4>" in db_url:
+                fixed_url = db_url.replace("&hostaddr=<IPv4>", "")
+                logger.info(f"✅ Fixed Supabase URL by removing placeholder: {fixed_url}")
+                return fixed_url
+            else:
+                logger.warning("⚠️ Could not automatically fix Supabase URL")
+        
+        logger.error("This indicates the database connection string is not properly configured.")
         logger.error("Attempting to construct connection string from individual components...")
         
         # Try to construct the connection string from individual components

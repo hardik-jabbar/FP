@@ -39,33 +39,11 @@ services:
       - key: RES_OPTIONS
         value: "rotate timeout:1 attempts:1"
       
-      # Database Configuration - Use the database connection string
+      # Database Configuration - Supabase connection string
+      # Note: Set DATABASE_URL manually in Render dashboard with your Supabase connection string
+      # Format: postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
       - key: DATABASE_URL
-        fromDatabase:
-          name: farmpower-db
-          property: connectionString
-      
-      # Additional database environment variables for debugging
-      - key: DB_HOST
-        fromDatabase:
-          name: farmpower-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: farmpower-db
-          property: port
-      - key: DB_NAME
-        fromDatabase:
-          name: farmpower-db
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: farmpower-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: farmpower-db
-          property: password
+        sync: false  # Set this manually in Render dashboard
       
       # Connection Pool Settings
       - key: DB_POOL_SIZE
@@ -146,8 +124,4 @@ services:
     numInstances: 1
     region: oregon  # Choose your preferred region
 
-databases:
-  - name: farmpower-db
-    databaseName: farmpower
-    user: farmpower_user
-    plan: free
+# No databases section needed - using Supabase external database

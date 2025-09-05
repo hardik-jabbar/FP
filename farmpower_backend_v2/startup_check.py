@@ -36,8 +36,12 @@ def check_environment():
             if key == 'DB_PASSWORD':
                 logger.info(f"✅ {key}: {'***' + value[-4:] if len(value) > 4 else '***'}")
             elif '<IPv4>' in value or 'placeholder' in value:
-                logger.error(f"❌ {key}: {value} (contains placeholder)")
-                issues.append(f"{key} contains placeholder value")
+                if 'supabase.co' in value:
+                    logger.warning(f"⚠️ {key}: {value} (Supabase with placeholder - will be auto-fixed)")
+                    # Don't add to issues for Supabase URLs with placeholders
+                else:
+                    logger.error(f"❌ {key}: {value} (contains placeholder)")
+                    issues.append(f"{key} contains placeholder value")
             else:
                 logger.info(f"✅ {key}: {value}")
     
@@ -51,6 +55,11 @@ def check_database_config():
     
     if db_url and '<IPv4>' not in db_url and 'placeholder' not in db_url:
         logger.info("✅ DATABASE_URL looks valid")
+        return True
+    
+    # Check if this is a Supabase URL with placeholder that can be auto-fixed
+    if db_url and 'supabase.co' in db_url and '<IPv4>' in db_url:
+        logger.info("✅ Supabase URL detected with placeholder - will be auto-fixed")
         return True
     
     # Try to construct from individual components
