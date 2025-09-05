@@ -99,13 +99,28 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     
     # Connection arguments with aggressive timeouts and keepalives
     connect_args = {
-        "connect_timeout": 10,
+        "connect_timeout": 30,  # Increased timeout for network issues
         "keepalives": 1,
         "keepalives_idle": 30,
         "keepalives_interval": 10,
         "keepalives_count": 5,
         "options": "-c statement_timeout=30000 -c idle_in_transaction_session_timeout=30000"
     }
+    
+    # Force IPv4 connection for Supabase to avoid IPv6 issues
+    if "supabase.co" in SQLALCHEMY_DATABASE_URL:
+        connect_args["options"] += " -c tcp_keepalives_idle=30 -c tcp_keepalives_interval=10 -c tcp_keepalives_count=5"
+        # Force IPv4 by using the IPv4 address if available
+        import socket
+        try:
+            hostname = SQLALCHEMY_DATABASE_URL.split('@')[1].split(':')[0]
+            ipv4_address = socket.gethostbyname(hostname)
+            logger.info(f"Resolved {hostname} to IPv4: {ipv4_address}")
+            # Replace hostname with IPv4 address in the URL
+            SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(hostname, ipv4_address)
+            logger.info(f"Using IPv4 address for connection: {ipv4_address}")
+        except Exception as e:
+            logger.warning(f"Could not resolve IPv4 address for {hostname}: {e}")
     
     # Force SSL if not explicitly set
     if "sslmode" not in SQLALCHEMY_DATABASE_URL.lower():

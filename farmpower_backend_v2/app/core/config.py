@@ -69,13 +69,25 @@ def get_database_url() -> str:
             if "?hostaddr=<IPv4>" in db_url:
                 fixed_url = db_url.replace("?hostaddr=<IPv4>", "")
                 logger.info(f"✅ Fixed Supabase URL by removing placeholder: {fixed_url}")
-                return fixed_url
             elif "&hostaddr=<IPv4>" in db_url:
                 fixed_url = db_url.replace("&hostaddr=<IPv4>", "")
                 logger.info(f"✅ Fixed Supabase URL by removing placeholder: {fixed_url}")
-                return fixed_url
             else:
+                fixed_url = db_url
                 logger.warning("⚠️ Could not automatically fix Supabase URL")
+            
+            # Now try to convert to IPv4 for better connectivity
+            try:
+                from .network_utils import create_ipv4_connection_string
+                ipv4_url = create_ipv4_connection_string(fixed_url)
+                if ipv4_url != fixed_url:
+                    logger.info("✅ Converted to IPv4 connection string for better connectivity")
+                    return ipv4_url
+                else:
+                    return fixed_url
+            except Exception as e:
+                logger.warning(f"⚠️ Could not convert to IPv4: {e}")
+                return fixed_url
         
         logger.error("This indicates the database connection string is not properly configured.")
         logger.error("Attempting to construct connection string from individual components...")

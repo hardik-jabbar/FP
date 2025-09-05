@@ -47,13 +47,30 @@ engine_params = {
     "pool_recycle": POOL_RECYCLE,
     "pool_pre_ping": True,  # Enable connection health checks
     "connect_args": {
-        "connect_timeout": CONNECT_TIMEOUT,
+        "connect_timeout": 30,  # Increased timeout for network issues
         "keepalives": 1,
         "keepalives_idle": 30,
         "keepalives_interval": 10,
         "keepalives_count": 5,
     },
 }
+
+# Force IPv4 connection for Supabase to avoid IPv6 issues
+if "supabase.co" in SQLALCHEMY_DATABASE_URL:
+    logger.info("🔍 Detected Supabase connection - forcing IPv4")
+    import socket
+    try:
+        hostname = SQLALCHEMY_DATABASE_URL.split('@')[1].split(':')[0]
+        ipv4_address = socket.gethostbyname(hostname)
+        logger.info(f"Resolved {hostname} to IPv4: {ipv4_address}")
+        # Replace hostname with IPv4 address in the URL
+        SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(hostname, ipv4_address)
+        logger.info(f"Using IPv4 address for connection: {ipv4_address}")
+    except Exception as e:
+        logger.warning(f"Could not resolve IPv4 address for {hostname}: {e}")
+    
+    # Add Supabase-specific connection options
+    engine_params["connect_args"]["options"] = "-c statement_timeout=30000 -c idle_in_transaction_session_timeout=30000"
 
 # SQLite specific configuration
 if SQLALCHEMY_DATABASE_URL.startswith('sqlite'):

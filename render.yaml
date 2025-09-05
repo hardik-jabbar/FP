@@ -33,11 +33,17 @@ services:
       - key: PYTHONPATH
         value: /app
       
-      # Network Optimization
+      # Network Optimization - Force IPv4 for Supabase compatibility
       - key: NETWORK_IPV6
         value: "no"
       - key: RES_OPTIONS
         value: "rotate timeout:1 attempts:1"
+      - key: PGHOST
+        value: "db.fmqxdoocmapllbuecblc.supabase.co"
+      - key: PGPORT
+        value: "5432"
+      - key: PGSSLMODE
+        value: "require"
       
       # Database Configuration - Supabase connection string
       # Note: Set DATABASE_URL manually in Render dashboard with your Supabase connection string
