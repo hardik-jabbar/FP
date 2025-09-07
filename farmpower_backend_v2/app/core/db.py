@@ -97,6 +97,9 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     if not SQLALCHEMY_DATABASE_URL:
         raise ValueError("DATABASE_URL is not set in environment variables")
     
+    # Use a local variable to avoid modifying the global
+    db_url = SQLALCHEMY_DATABASE_URL
+    
     # Connection arguments with aggressive timeouts and keepalives
     connect_args = {
         "connect_timeout": 30,  # Increased timeout for network issues
@@ -108,22 +111,26 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     }
     
     # Force IPv4 connection for Supabase to avoid IPv6 issues
-    if "supabase.co" in SQLALCHEMY_DATABASE_URL:
+    if "supabase.co" in db_url:
         connect_args["options"] += " -c tcp_keepalives_idle=30 -c tcp_keepalives_interval=10 -c tcp_keepalives_count=5"
         # Force IPv4 by using the IPv4 address if available
         import socket
         try:
-            hostname = SQLALCHEMY_DATABASE_URL.split('@')[1].split(':')[0]
+            hostname = db_url.split('@')[1].split(':')[0]
             ipv4_address = socket.gethostbyname(hostname)
             logger.info(f"Resolved {hostname} to IPv4: {ipv4_address}")
             # Replace hostname with IPv4 address in the URL
-            SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(hostname, ipv4_address)
+            db_url = db_url.replace(hostname, ipv4_address)
             logger.info(f"Using IPv4 address for connection: {ipv4_address}")
         except Exception as e:
             logger.warning(f"Could not resolve IPv4 address for {hostname}: {e}")
+            # If DNS resolution fails, try using the original URL with IPv4 preference
+            logger.info("Using original URL with IPv4 preference settings")
+            # Add IPv4 preference to connection args
+            connect_args["options"] += " -c preferIPv4=true"
     
     # Force SSL if not explicitly set
-    if "sslmode" not in SQLALCHEMY_DATABASE_URL.lower():
+    if "sslmode" not in db_url.lower():
         connect_args["sslmode"] = "require"
     
     # Add Supabase-specific settings
@@ -131,7 +138,7 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
         try:
             # Create engine with connection pooling and timeouts
             engine = create_engine(
-                SQLALCHEMY_DATABASE_URL,
+                db_url,  # Use the local db_url variable
                 pool_size=5,
                 max_overflow=10,
                 pool_timeout=30,
@@ -160,7 +167,7 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     # If we get here, all retries failed - create engine anyway for startup
     logger.warning("Failed to connect to database during startup, but creating engine for later use")
     engine = create_engine(
-        SQLALCHEMY_DATABASE_URL,
+        db_url,  # Use the local db_url variable
         pool_size=5,
         max_overflow=10,
         pool_timeout=30,
