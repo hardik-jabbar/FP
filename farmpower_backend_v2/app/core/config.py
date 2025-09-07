@@ -76,21 +76,9 @@ def get_database_url() -> str:
                 fixed_url = db_url
                 logger.warning("⚠️ Could not automatically fix Supabase URL")
             
-            # For Supabase, try to use a more robust connection approach
-            try:
-                # Add connection parameters to force IPv4 and improve reliability
-                if '?' in fixed_url:
-                    # URL already has parameters, add IPv4 preference
-                    fixed_url += "&preferIPv4=true"
-                else:
-                    # Add parameters to force IPv4
-                    fixed_url += "?preferIPv4=true"
-                
-                logger.info("✅ Added IPv4 preference to Supabase connection string")
-                return fixed_url
-            except Exception as e:
-                logger.warning(f"⚠️ Could not modify connection string: {e}")
-                return fixed_url
+            # For Supabase, return the cleaned URL without invalid parameters
+            logger.info("✅ Using cleaned Supabase connection string")
+            return fixed_url
         
         logger.error("This indicates the database connection string is not properly configured.")
         logger.error("Attempting to construct connection string from individual components...")

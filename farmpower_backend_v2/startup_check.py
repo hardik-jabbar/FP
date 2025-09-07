@@ -30,8 +30,14 @@ def check_environment():
     for key, value in env_vars.items():
         if value is None:
             logger.warning(f"⚠️ {key}: Not Set")
-            if key in ['DATABASE_URL', 'DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']:
+            # Only require individual DB variables if not using Supabase
+            if key == 'DATABASE_URL':
                 issues.append(f"Missing {key}")
+            elif key in ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']:
+                # Check if we're using Supabase - if so, individual DB variables are not required
+                db_url = env_vars.get('DATABASE_URL', '')
+                if 'supabase.co' not in db_url:
+                    issues.append(f"Missing {key}")
         else:
             if key == 'DB_PASSWORD':
                 logger.info(f"✅ {key}: {'***' + value[-4:] if len(value) > 4 else '***'}")

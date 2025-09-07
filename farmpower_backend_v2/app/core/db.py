@@ -112,8 +112,10 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
     
     # Force IPv4 connection for Supabase to avoid IPv6 issues
     if "supabase.co" in db_url:
+        # Add TCP keepalive settings for better connection stability
         connect_args["options"] += " -c tcp_keepalives_idle=30 -c tcp_keepalives_interval=10 -c tcp_keepalives_count=5"
-        # Force IPv4 by using the IPv4 address if available
+        
+        # Try to resolve to IPv4, but don't fail if DNS resolution doesn't work
         import socket
         try:
             hostname = db_url.split('@')[1].split(':')[0]
@@ -124,10 +126,8 @@ def create_db_engine(max_retries: int = 5, initial_retry_delay: float = 1.0) -> 
             logger.info(f"Using IPv4 address for connection: {ipv4_address}")
         except Exception as e:
             logger.warning(f"Could not resolve IPv4 address for {hostname}: {e}")
-            # If DNS resolution fails, try using the original URL with IPv4 preference
-            logger.info("Using original URL with IPv4 preference settings")
-            # Add IPv4 preference to connection args
-            connect_args["options"] += " -c preferIPv4=true"
+            # If DNS resolution fails, continue with the original hostname
+            logger.info("Using original hostname with enhanced connection settings")
     
     # Force SSL if not explicitly set
     if "sslmode" not in db_url.lower():

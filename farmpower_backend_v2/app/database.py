@@ -68,8 +68,8 @@ if "supabase.co" in SQLALCHEMY_DATABASE_URL:
         logger.info(f"Using IPv4 address for connection: {ipv4_address}")
     except Exception as e:
         logger.warning(f"Could not resolve IPv4 address for {hostname}: {e}")
-        # If DNS resolution fails, continue with original URL but add IPv4 preference
-        logger.info("Continuing with original URL and IPv4 preference settings")
+        # If DNS resolution fails, continue with original URL
+        logger.info("Continuing with original URL and enhanced connection settings")
     
     # Add Supabase-specific connection options
     engine_params["connect_args"]["options"] = "-c statement_timeout=30000 -c idle_in_transaction_session_timeout=30000"
