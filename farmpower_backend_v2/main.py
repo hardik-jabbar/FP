@@ -134,6 +134,24 @@ app = FastAPI(
     redoc_url="/redoc" if os.getenv('ENVIRONMENT') != 'production' else None
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add rate limiting middleware
+app.middleware("http")(rate_limit_middleware)
+
+# Add performance monitoring middleware
+app.middleware("http")(performance_middleware)
+
+# Include API router
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
 # Health check endpoint
 @app.get("/health", response_model=Dict[str, Any])
 async def health_check() -> Dict[str, Any]:

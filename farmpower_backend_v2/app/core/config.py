@@ -105,14 +105,11 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
-    JWT_SECRET: str = "your-64-character-jwt-secret-here"
-    JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
-    
-    # File Upload
+# Security
+SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(64))
+ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+JWT_ALGORITHM: str = "HS256"
+OTP_EXPIRE_MINUTES: int = 15  # 15 minutes    # File Upload
     UPLOAD_DIR: Path = Path("uploads")
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_UPLOAD_EXTENSIONS: set = {".jpg", ".jpeg", ".png", ".pdf"}
