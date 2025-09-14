@@ -17,12 +17,16 @@ from dotenv import load_dotenv
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Import rate limit middleware after modifying sys.path
+# Import custom modules after modifying sys.path
 try:
     from middleware.rate_limit import rate_limit_middleware
+    from app.core.logging import setup_logging, performance_middleware
 except ImportError as e:
-    logging.warning(f"Could not import rate limit middleware: {e}")
+    logging.warning(f"Could not import middleware: {e}")
     rate_limit_middleware = lambda app: app
+
+# Initialize logging
+logger = setup_logging(app_name="FarmPower", log_level=logging.INFO)
 
 # Load environment variables
 load_dotenv()
@@ -180,6 +184,9 @@ allowed_origins = [
 # Add any additional origins from environment variable
 additional_origins = [origin.strip() for origin in os.getenv('ALLOWED_ORIGINS', '').split(',') if origin.strip()]
 allowed_origins.extend(additional_origins)
+
+# Add performance monitoring middleware
+app.middleware("http")(performance_middleware)
 
 # Add security middleware
 app.add_middleware(SecurityHeadersMiddleware)
