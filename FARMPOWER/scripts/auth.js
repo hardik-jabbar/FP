@@ -1,7 +1,8 @@
 // Authentication service for FarmPower
 const API_BASE_URL = 'https://fp-mipu.onrender.com/api/v1';
 
-const auth = {
+// Make auth available globally
+window.auth = {
     // Store the token in localStorage
     setToken(token) {
         localStorage.setItem('token', token);
