@@ -28,24 +28,45 @@ for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE
     source = 'Environment' if key in os.environ and not os.getenv('DOTENV_LOADED') else '.env file'
     logger.info(f"{key}: {value} (from {source})")
 
-# Only force local database configuration if DATABASE_URL is not set and we're in development
-if os.getenv('ENVIRONMENT', 'development') != 'production' and not os.getenv('DATABASE_URL'):
-    logger.info("\n=== Forcing local database configuration (development mode) ===")
-    os.environ['DB_HOST'] = 'localhost'
-    os.environ['DB_PORT'] = '5432'
-    os.environ['DB_NAME'] = 'farmpower'
-    os.environ['DB_USER'] = 'postgres'
-    os.environ['DB_PASSWORD'] = 'postgres'
-    os.environ['DATABASE_URL'] = 'postgresql://postgres:postgres@localhost:5432/farmpower'
-    os.environ['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/farmpower'
+# Set default environment
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+logger.info(f"\n=== Running in {ENVIRONMENT.upper()} mode ===")
+
+if ENVIRONMENT == 'production':
+    # Production settings
+    logger.info("=== Using production configuration ===")
+    required_vars = [
+        'DATABASE_URL',
+        'DB_HOST',
+        'DB_PORT',
+        'DB_NAME',
+        'DB_USER',
+        'DB_PASSWORD'
+    ]
     
-    # Log the forced configuration
-    for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE_URL']:
-        logger.info(f"FORCED {key}: {os.getenv(key)}")
+    # Verify all required variables are set
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    if missing_vars:
+        logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
+        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+        
+    logger.info("✅ All required environment variables are set")
+    logger.info(f"Using DATABASE_URL from environment: {os.getenv('DATABASE_URL').split('@')[-1] if '@' in os.getenv('DATABASE_URL', '') else '***'}")
 else:
-    logger.info("\n=== Using provided DATABASE_URL (production mode) ===")
-    if os.getenv('DATABASE_URL'):
-        logger.info(f"Using DATABASE_URL from environment: {os.getenv('DATABASE_URL').split('@')[-1] if '@' in os.getenv('DATABASE_URL', '') else '***'}")
+    # Development settings
+    logger.info("=== Using development configuration ===")
+    if not os.getenv('DATABASE_URL'):
+        logger.info("Setting up local database configuration")
+        os.environ['DB_HOST'] = 'localhost'
+        os.environ['DB_PORT'] = '5432'
+        os.environ['DB_NAME'] = 'farmpower'
+        os.environ['DB_USER'] = 'postgres'
+        os.environ['DB_PASSWORD'] = 'postgres'
+        os.environ['DATABASE_URL'] = 'postgresql://postgres:postgres@localhost:5432/farmpower'
+        
+        # Log the development configuration
+        for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE_URL']:
+            logger.info(f"DEV {key}: {os.getenv(key)}")
 
 def get_database_url() -> str:
     """Get and properly format the database URL with URL-encoded credentials."""
