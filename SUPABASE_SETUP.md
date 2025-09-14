@@ -6,7 +6,7 @@ The error shows that your Supabase connection string contains a placeholder `<IP
 
 ## Current Connection String:
 ```
-postgresql://postgres:%5BFarmpower%40123%5D@db.fmqxdoocmapllbuecblc.supabase.co:5432/postgres?hostaddr=<IPv4>
+postgresql://postgres:9yFWrNN9wL6adLqA@db.fmqxdoocmapllbuecblc.supabase.co:5432/postgres
 ```
 
 ## Fixed Connection String:
