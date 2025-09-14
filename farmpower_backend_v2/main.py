@@ -1,15 +1,14 @@
 import os
 import sys
 import logging
-import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, status, Response
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
@@ -18,12 +17,10 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules after modifying sys.path
-try:
-    from middleware.rate_limit import rate_limit_middleware
-    from app.core.logging import setup_logging, performance_middleware
-except ImportError as e:
-    logging.warning(f"Could not import middleware: {e}")
-    rate_limit_middleware = lambda app: app
+from middleware.rate_limit import rate_limit_middleware
+from app.core.logging import setup_logging, performance_middleware
+from app.api.api import api_router
+from app.core.config import settings
 
 # Initialize logging
 logger = setup_logging(app_name="FarmPower", log_level=logging.INFO)

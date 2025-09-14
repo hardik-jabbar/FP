@@ -46,14 +46,10 @@ engine_params = {
     "pool_timeout": POOL_TIMEOUT,
     "pool_recycle": POOL_RECYCLE,
     "pool_pre_ping": True,  # Enable connection health checks
-    "connect_args": {
-        "connect_timeout": 30,  # Increased timeout for network issues
-        "keepalives": 1,
-        "keepalives_idle": 30,
-        "keepalives_interval": 10,
-        "keepalives_count": 5,
-    },
 }
+
+# Initialize connect_args based on URL
+connect_args = {}
 
 # Force IPv4 connection for Supabase to avoid IPv6 issues
 if "supabase.co" in SQLALCHEMY_DATABASE_URL:
@@ -74,16 +70,25 @@ if "supabase.co" in SQLALCHEMY_DATABASE_URL:
     # Add Supabase-specific connection options
     engine_params["connect_args"]["options"] = "-c statement_timeout=30000 -c idle_in_transaction_session_timeout=30000"
 
-# SQLite specific configuration
+# Set up database-specific configurations
 if SQLALCHEMY_DATABASE_URL.startswith('sqlite'):
-    engine_params["connect_args"]["check_same_thread"] = False
+    # SQLite specific configuration
+    connect_args["check_same_thread"] = False
     logger.info("Using SQLite database with thread check disabled")
 else:
     # PostgreSQL specific configuration
-    engine_params["connect_args"].update({
+    connect_args.update({
+        "connect_timeout": 30,  # Increased timeout for network issues
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
         "options": f"-c statement_timeout={STATEMENT_TIMEOUT * 1000}",  # milliseconds
     })
     logger.info("Using PostgreSQL database with connection pooling")
+
+# Add connect_args to engine parameters
+engine_params["connect_args"] = connect_args
 
 def create_db_engine():
     """Create and configure SQLAlchemy engine with retry logic."""

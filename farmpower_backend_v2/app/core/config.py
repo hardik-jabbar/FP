@@ -1,10 +1,13 @@
 import os
-import urllib.parse
+import secrets
 import logging
 import sys
-from typing import Optional
+from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
+from pydantic import AnyHttpUrl, HttpUrl, PostgresDsn, validator
+from pydantic_settings import BaseSettings
 from dotenv import load_dotenv, find_dotenv
+from urllib.parse import urlparse, urlunparse, quote_plus, unquote
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -14,201 +17,153 @@ logger = logging.getLogger(__name__)
 env_path = find_dotenv(usecwd=True)
 if not env_path:
     env_path = Path(__file__).parent.parent.parent / '.env'
-    logger.warning(f"No .env file found, using default at: {env_path}")
-else:
-    logger.info(f"Loading environment from: {env_path}")
 
-# Load environment variables, overriding any existing ones
-load_dotenv(env_path, override=True)
+load_dotenv(env_path)
 
-# Debug: Print environment variables and their sources
-logger.info("\n=== Environment Variables ===")
-for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE_URL']:
-    value = os.getenv(key, 'Not Set')
-    source = 'Environment' if key in os.environ and not os.getenv('DOTENV_LOADED') else '.env file'
-    logger.info(f"{key}: {value} (from {source})")
-
-# Set default environment
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
-logger.info(f"\n=== Running in {ENVIRONMENT.upper()} mode ===")
-
-if ENVIRONMENT == 'production':
-    # Production settings
-    logger.info("=== Using production configuration ===")
-    required_vars = [
-        'DATABASE_URL',
-        'DB_HOST',
-        'DB_PORT',
-        'DB_NAME',
-        'DB_USER',
-        'DB_PASSWORD'
-    ]
+def format_database_url(url: str) -> str:
+    """Format and validate a database URL."""
+    if url.startswith('sqlite:'):
+        if not url.startswith('sqlite:///'):
+            url = 'sqlite:///' + url.split('sqlite:')[-1].lstrip(':/\\')
+        return url
     
-    # Verify all required variables are set
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
-    if missing_vars:
-        logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
-        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-        
-    logger.info("✅ All required environment variables are set")
-    logger.info(f"Using DATABASE_URL from environment: {os.getenv('DATABASE_URL').split('@')[-1] if '@' in os.getenv('DATABASE_URL', '') else '***'}")
-else:
-    # Development settings
-    logger.info("=== Using development configuration ===")
-    if not os.getenv('DATABASE_URL'):
-        logger.info("Setting up local database configuration")
-        os.environ['DB_HOST'] = 'localhost'
-        os.environ['DB_PORT'] = '5432'
-        os.environ['DB_NAME'] = 'farmpower'
-        os.environ['DB_USER'] = 'postgres'
-        os.environ['DB_PASSWORD'] = 'postgres'
-        os.environ['DATABASE_URL'] = 'postgresql://postgres:postgres@localhost:5432/farmpower'
-        
-        # Log the development configuration
-        for key in ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DATABASE_URL']:
-            logger.info(f"DEV {key}: {os.getenv(key)}")
-
-def get_database_url() -> str:
-    """Get and properly format the database URL with URL-encoded credentials."""
-    db_url = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
-    
-    # Log the original URL for debugging
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.info(f"Raw DATABASE_URL from environment: {db_url}")
-    
-    # Check for placeholder values that indicate configuration issues
-    if "<IPv4>" in db_url or "placeholder" in db_url:
-        logger.warning(f"⚠️ DATABASE_URL contains placeholder value: {db_url}")
-        
-        # Check if this is a Supabase connection string
-        if "supabase.co" in db_url:
-            logger.info("🔍 Detected Supabase connection string with placeholder")
-            logger.info("Attempting to fix Supabase connection string...")
-            
-            # Remove the placeholder from the end of the URL
-            if "?hostaddr=<IPv4>" in db_url:
-                fixed_url = db_url.replace("?hostaddr=<IPv4>", "")
-                logger.info(f"✅ Fixed Supabase URL by removing placeholder: {fixed_url}")
-            elif "&hostaddr=<IPv4>" in db_url:
-                fixed_url = db_url.replace("&hostaddr=<IPv4>", "")
-                logger.info(f"✅ Fixed Supabase URL by removing placeholder: {fixed_url}")
-            else:
-                fixed_url = db_url
-                logger.warning("⚠️ Could not automatically fix Supabase URL")
-            
-            # For Supabase, return the cleaned URL without invalid parameters
-            logger.info("✅ Using cleaned Supabase connection string")
-            return fixed_url
-        
-        logger.error("This indicates the database connection string is not properly configured.")
-        logger.error("Attempting to construct connection string from individual components...")
-        
-        # Try to construct the connection string from individual components
-        db_host = os.getenv("DB_HOST")
-        db_port = os.getenv("DB_PORT", "5432")
-        db_name = os.getenv("DB_NAME")
-        db_user = os.getenv("DB_USER")
-        db_password = os.getenv("DB_PASSWORD")
-        
-        logger.info(f"DB_HOST: {db_host}")
-        logger.info(f"DB_PORT: {db_port}")
-        logger.info(f"DB_NAME: {db_name}")
-        logger.info(f"DB_USER: {db_user}")
-        logger.info(f"DB_PASSWORD: {'***' if db_password else 'Not Set'}")
-        
-        if all([db_host, db_name, db_user, db_password]):
-            # Construct the connection string
-            from urllib.parse import quote_plus
-            constructed_url = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_name}"
-            logger.info(f"✅ Constructed database URL from components: postgresql://{db_user}:***@{db_host}:{db_port}/{db_name}")
-            return constructed_url
-        else:
-            logger.error("❌ Missing required database components:")
-            logger.error(f"  DB_HOST: {'✅' if db_host else '❌'}")
-            logger.error(f"  DB_NAME: {'✅' if db_name else '❌'}")
-            logger.error(f"  DB_USER: {'✅' if db_user else '❌'}")
-            logger.error(f"  DB_PASSWORD: {'✅' if db_password else '❌'}")
-            logger.error("Please check:")
-            logger.error("1. Database 'farmpower-db' exists in Render")
-            logger.error("2. Database is properly linked to the service")
-            logger.error("3. Environment variables are set correctly")
-            
-            # In production, try to use a fallback or exit gracefully
-            if os.getenv('ENVIRONMENT', 'development') == 'production':
-                logger.warning("⚠️ Using SQLite fallback in production due to invalid DATABASE_URL")
-                return "sqlite:///./fallback.db"
-            else:
-                logger.error("❌ Cannot proceed with invalid DATABASE_URL in development")
-                return db_url
-    
-    # If it's a SQLite URL, ensure it's properly formatted
-    if db_url.startswith("sqlite"):
-        if not db_url.startswith("sqlite:///"):
-            db_url = "sqlite:///" + db_url.split("sqlite")[-1].lstrip(":/\\")
-        return db_url
-    
-    # Log the original URL (without password) for debugging
-    safe_url = db_url.split('@')[-1] if '@' in db_url else db_url
-    logger.info(f"Original database URL format (host only): postgresql://...@{safe_url}")
+    # Handle PostgreSQL URLs
+    if not url.startswith('postgresql://'):
+        url = f'postgresql://{url}'
     
     try:
-        # For non-SQLite URLs, ensure proper URL encoding
-        if '://' not in db_url:
-            db_url = f"postgresql://{db_url}"
-            
-        from urllib.parse import urlparse, urlunparse, quote_plus, unquote
+        parsed = urlparse(unquote(url))
+        username = quote_plus(parsed.username or '')
+        password = quote_plus(parsed.password or '')
+        hostname = parsed.hostname or ''
+        port = f':{parsed.port}' if parsed.port else ''
+        path = parsed.path
         
-        # First, unquote any URL-encoded parts to handle them properly
-        unquoted_url = unquote(db_url)
-        
-        # Parse the URL
-        parsed = urlparse(unquoted_url)
-        
-        # Extract and encode credentials if they exist
-        if parsed.username or parsed.password:
-            username = quote_plus(parsed.username or '')
-            password = quote_plus(parsed.password or '')
-            
-            # Handle special characters in password that might break URL parsing
-            # Replace any remaining special characters with URL-encoded versions
-            password = password.replace('[', '%5B').replace(']', '%5D')
-            
-            # Rebuild the netloc with encoded credentials
-            hostname = parsed.hostname or ''
-            port = f":{parsed.port}" if parsed.port else ""
-            netloc = f"{username}:{password}@{hostname}{port}" if password else f"{username}@{hostname}{port}"
-            
-            # Rebuild the URL with the new netloc
-            db_url = urlunparse(parsed._replace(netloc=netloc))
-            
-            # Log the final URL (with masked password) for debugging
-            masked_url = db_url.replace(password, '***')
-            logger.info(f"Final database URL (masked): {masked_url}")
-            
+        netloc = f'{username}:{password}@{hostname}{port}' if password else f'{username}@{hostname}{port}'
+        return urlunparse(parsed._replace(netloc=netloc))
     except Exception as e:
-        logger.error(f"Error processing database URL: {str(e)}")
-        # Return the original URL if parsing fails
-        return db_url
+        logger.error(f'Error formatting database URL: {str(e)}')
+        return url
+
+class Settings(BaseSettings):
+    # API Settings
+    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str = "FarmPower"
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    LOG_LEVEL: str = "INFO"
+
+    # Testing flag
+    TESTING: bool = os.getenv("TESTING", "False").lower() == "true"
+
+    # Database Configuration
+    DB_HOST: str = os.getenv("DB_HOST", "localhost")
+    DB_PORT: str = os.getenv("DB_PORT", "5432")
+    DB_NAME: str = os.getenv("DB_NAME", "farmpower")
+    DB_USER: str = os.getenv("DB_USER", "postgres")
+    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "postgres")
+    SQLALCHEMY_DATABASE_URI: Optional[str] = None
+
+    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
+    def set_database_url(cls, v: Optional[str], values: Dict[str, Any]) -> str:
+        """Set and validate the database URL."""
+        # Use SQLite for testing
+        if os.getenv("TESTING", "").lower() == "true":
+            return "sqlite:///./test.db"
+            
+        # Use provided DATABASE_URL or construct from components
+        db_url = os.getenv("DATABASE_URL")
+        if not db_url:
+            db_url = f"postgresql://{values['DB_USER']}:{values['DB_PASSWORD']}@{values['DB_HOST']}:{values['DB_PORT']}/{values['DB_NAME']}"
+            
+        # Format and validate the URL
+        return format_database_url(db_url)
+
+    # Alias for backward compatibility
+    @property
+    def DATABASE_URL(self) -> str:
+        return self.SQLALCHEMY_DATABASE_URI
     
-    return db_url
+    # CORS Configuration
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://celebrated-crumble-e25621.netlify.app",
+    ]
+    ALLOWED_HOSTS: str = "*"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5000,http://localhost:8080"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5000,http://localhost:8080"
 
-class Settings:
-    # Get the properly formatted database URL
-    DATABASE_URL: str = get_database_url()
+    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
 
-    # JWT settings
-    SECRET_KEY: Optional[str] = os.getenv("SECRET_KEY", "your-very-secret-key-that-should-be-in-env") # Default for safety, but should be in .env
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    JWT_SECRET: str = "your-64-character-jwt-secret-here"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
+    
+    # File Upload
+    UPLOAD_DIR: Path = Path("uploads")
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_UPLOAD_EXTENSIONS: set = {".jpg", ".jpeg", ".png", ".pdf"}
 
-    # AWS S3 settings - with default fallbacks for local development
-    AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID", "dummy_access_key")
-    AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY", "dummy_secret_key")
-    AWS_S3_BUCKET_NAME: Optional[str] = os.getenv("AWS_S3_BUCKET_NAME", "dummy-bucket-name")
-    AWS_S3_REGION_NAME: Optional[str] = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
+    # Supabase Configuration
+    NEXT_PUBLIC_SUPABASE_URL: str = "https://fmqxdoocmapllbuecblc.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: str = "your-supabase-anon-key"
+    SUPABASE_SERVICE_ROLE_KEY: str = "your-supabase-service-role-key"
+    SUPABASE_URL: str = "https://fmqxdoocmapllbuecblc.supabase.co"
 
-    # Example for other settings that might be added later
-    # API_V1_STR: str = "/api/v1"
+    # External Services
+    GOOGLE_AI_API_KEY: str = "your-google-ai-api-key"
+
+    # Email Configuration
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "your-email@gmail.com"
+    SMTP_PASSWORD: str = "your-app-specific-password"
+    EMAIL_FROM: str = "noreply@yourdomain.com"
+
+    # Storage Configuration
+    STORAGE_TYPE: str = "local"  # Options: local, s3
+    AWS_ACCESS_KEY_ID: str = "your-aws-access-key"
+    AWS_SECRET_ACCESS_KEY: str = "your-aws-secret-key"
+    AWS_STORAGE_BUCKET_NAME: str = "your-bucket-name"
+    AWS_S3_REGION: str = "us-east-1"
+
+    # Rate Limiting
+    RATE_LIMIT: str = "100/minute"
+
+    class Config:
+        case_sensitive = True
+        env_file = ".env"
+        env_file_encoding = 'utf-8'
+        extra = "allow"
 
 settings = Settings()
+
+# Print environment mode
+environment = "testing" if settings.TESTING else settings.ENVIRONMENT
+logger.info(f"\n=== Running in {environment.upper()} mode ===")
+
+# Print database configuration
+if settings.TESTING:
+    logger.info("=== Using SQLite for testing ===")
+    logger.info(f"Database URL: sqlite:///./test.db")
+else:
+    # Mask sensitive information in logs
+    db_url = settings.SQLALCHEMY_DATABASE_URI
+    if db_url and '@' in db_url:
+        masked_url = '***' + db_url[db_url.find('@'):]
+        logger.info(f"Database URL: {masked_url}")
+    else:
+        logger.info("Database URL: [masked]")

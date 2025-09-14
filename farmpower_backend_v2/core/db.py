@@ -8,24 +8,40 @@ from contextlib import contextmanager
 
 from .config import settings
 
-def is_ipv4_available(host):
+def resolve_ipv4(host):
     try:
-        socket.getaddrinfo(host, None, socket.AF_INET)
-        return True
-    except socket.gaierror:
-        return False
+        # Force IPv4 by explicitly requesting AF_INET
+        addrinfo = socket.getaddrinfo(
+            host,
+            None,
+            socket.AF_INET,  # Force IPv4
+            socket.SOCK_STREAM,
+            socket.IPPROTO_TCP
+        )
+        return addrinfo[0][4][0]  # Return the first IPv4 address
+    except socket.gaierror as e:
+        logging.warning(f"Could not resolve IPv4 for {host}: {e}")
+        return None
 
 def get_database_url():
     url = settings.DATABASE_URL
+    if not url:
+        raise ValueError("DATABASE_URL is not set")
     
     # Parse host from URL
-    host = url.split('@')[1].split(':')[0]
+    try:
+        host = url.split('@')[1].split(':')[0]
+    except IndexError:
+        logging.error(f"Invalid DATABASE_URL format: {url}")
+        raise ValueError("Invalid DATABASE_URL format")
     
-    # Force IPv4 if available
-    if is_ipv4_available(host):
-        ipv4 = socket.getaddrinfo(host, None, socket.AF_INET)[0][4][0]
+    # Force IPv4
+    ipv4 = resolve_ipv4(host)
+    if ipv4:
+        logging.info(f"✅ Resolved IPv4 address for {host}: {ipv4}")
         return url.replace(host, ipv4)
     
+    logging.warning(f"⚠️ Could not resolve IPv4 for {host}, using original hostname")
     return url
 
 def create_db_engine():
