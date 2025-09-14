@@ -18,8 +18,38 @@
 
 ### Base URL
 ```
-http://localhost:8000/api
+Production: https://fp-mipu.onrender.com/api
+Development: http://localhost:8000/api
 ```
+
+### Environment Configuration
+The application requires the following environment variables:
+
+```bash
+# Database Configuration
+DATABASE_URL=postgresql://[username]:[password]@[host]:[port]/[database]
+DB_HOST=[your-database-host]
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=[your-database-user]
+DB_PASSWORD=[your-database-password]
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://[your-project].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-anon-key]
+SUPABASE_SERVICE_ROLE_KEY=[your-service-role-key]
+
+# Application Configuration
+ENVIRONMENT=production  # or 'development'
+ALLOWED_ORIGINS=https://celebrated-crumble-e25621.netlify.app
+```
+
+### Security Features
+- All endpoints are served over HTTPS
+- CORS is configured to allow requests only from trusted origins
+- Rate limiting is enabled to prevent abuse
+- Security headers are enforced for all responses
+- Structured logging and monitoring is enabled
 
 ### Authentication Headers
 ```
