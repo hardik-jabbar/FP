@@ -87,6 +87,7 @@ else:
 
 def create_db_engine():
     """Create and configure SQLAlchemy engine with retry logic."""
+    from sqlalchemy import text
     max_retries = 3
     retry_delay = 5  # seconds
     
@@ -94,9 +95,10 @@ def create_db_engine():
         try:
             engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_params)
             
-            # Test the connection
+            # Test the connection using proper SQLAlchemy text construct
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
+                conn.execute(text("SELECT 1"))
+                conn.commit()
                 
             logger.info("Successfully connected to the database")
             return engine
