@@ -196,14 +196,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
-    allow_origins=allowed_origins,
-    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["Content-Length", "X-Request-ID"],
-    max_age=600,  # 10 minutes
+    max_age=600  # 10 minutes
 )
 
 # Redirect HTTP to HTTPS in production
