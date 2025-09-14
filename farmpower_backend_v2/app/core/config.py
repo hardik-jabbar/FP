@@ -92,10 +92,12 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5173",
         "https://celebrated-crumble-e25621.netlify.app",
+        "https://fp-mipu.onrender.com",
+        "https://farmpower.netlify.app"  # Add your frontend URL
     ]
     ALLOWED_HOSTS: str = "*"
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5000,http://localhost:8080"
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5000,http://localhost:8080"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5000,http://localhost:8080,https://fp-mipu.onrender.com,https://farmpower.netlify.app"
+    CORS_ORIGINS: str = ALLOWED_ORIGINS
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
@@ -105,11 +107,13 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-# Security
-SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(64))
-ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
-JWT_ALGORITHM: str = "HS256"
-OTP_EXPIRE_MINUTES: int = 15  # 15 minutes    # File Upload
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(64))
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    JWT_ALGORITHM: str = "HS256"
+    OTP_EXPIRE_MINUTES: int = 15  # 15 minutes
+
+    # File Upload
     UPLOAD_DIR: Path = Path("uploads")
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_UPLOAD_EXTENSIONS: set = {".jpg", ".jpeg", ".png", ".pdf"}
