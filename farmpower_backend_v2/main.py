@@ -169,17 +169,28 @@ logger.info(f"Project root: {project_root}")
 logger.info(f"FARMPOWER directory: {farmpower_dir}")
 logger.info(f"Directory exists: {os.path.exists(farmpower_dir)}")
 
-# Configure CORS first - allow all origins
-allowed_origins = [origin.strip() for origin in os.getenv('ALLOWED_ORIGINS', '').split(',') if origin.strip()]
-if not allowed_origins:
-    allowed_origins = ["http://localhost:3000"]  # Default for development
+# Configure CORS for both development and production origins
+allowed_origins = [
+    "http://localhost:3000",  # Development
+    "http://localhost:5173",  # Vite dev server
+    "https://celebrated-crumble-e25621.netlify.app",  # Production frontend
+    "https://www.celebrated-crumble-e25621.netlify.app"  # Production frontend with www
+]
+
+# Add any additional origins from environment variable
+additional_origins = [origin.strip() for origin in os.getenv('ALLOWED_ORIGINS', '').split(',') if origin.strip()]
+allowed_origins.extend(additional_origins)
 
 # Add security middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Add CORS middleware
+# Add CORS middleware with full configuration
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
