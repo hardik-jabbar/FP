@@ -2,16 +2,23 @@ import uuid
 from typing import Optional, Union, BinaryIO # BinaryIO for file-like objects
 from ..core.config import settings # Assuming settings are in app.core.config
 
-# Conditional import for aiobotocore, only if actually using S3
-if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY and settings.AWS_S3_BUCKET_NAME:
+# Check if S3 is enabled in settings
+s3_enabled = (
+    getattr(settings, 'AWS_ACCESS_KEY_ID', None) and 
+    getattr(settings, 'AWS_SECRET_ACCESS_KEY', None) and 
+    getattr(settings, 'AWS_S3_BUCKET_NAME', None)
+)
+
+# Conditional import for aiobotocore
+if s3_enabled:
     try:
         from aiobotocore.session import get_session
     except ImportError:
-        # This allows the app to run if aiobotocore couldn't be installed (e.g. in timeout scenarios)
-        # but S3 features will be strictly mocked.
+        # This allows the app to run if aiobotocore couldn't be installed
         print("WARNING: aiobotocore not installed. S3 functionality will be fully mocked.")
         get_session = None
 else:
+    print("WARNING: AWS S3 not configured. S3 functionality will be fully mocked.")
     get_session = None # Not using S3, so no need for the session object
 
 async def upload_file_to_s3(file_object: Union[bytes, BinaryIO], original_filename: str) -> Optional[str]:
@@ -32,21 +39,18 @@ async def upload_file_to_s3(file_object: Union[bytes, BinaryIO], original_filena
     unique_filename = f"{unique_filename_base}.{file_extension}" if file_extension else unique_filename_base
 
     # Mocking mode if AWS not fully configured or aiobotocore not available
-    if not get_session or not all([settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY, settings.AWS_S3_BUCKET_NAME, settings.AWS_S3_REGION]):
+    if not get_session or not s3_enabled:
         print(f"S3 Service (Mock Mode): Simulating upload for {unique_filename}.")
         if hasattr(file_object, 'read'):
             try:
-                # If it's a file-like object from UploadFile, it might have been read already.
-                # If it's SpooledTemporaryFile, reading it consumes it.
-                # For mock, just acknowledge. In real, ensure it's seek(0) or pass bytes.
                 print(f"Mock S3: File object received for {unique_filename}. Assuming it can be read.")
             except Exception as e:
                 print(f"Mock S3: Error with file object for {unique_filename}. Error: {e}")
         else: # Assuming it's bytes
              print(f"Mock S3: Received bytes directly for {unique_filename}.")
 
-        mock_bucket = settings.AWS_S3_BUCKET_NAME or 'mock-farmpower-bucket'
-        mock_region = settings.AWS_S3_REGION or 'mock-region-1'
+        mock_bucket = getattr(settings, 'AWS_S3_BUCKET_NAME', 'mock-farmpower-bucket')
+        mock_region = getattr(settings, 'AWS_S3_REGION', 'mock-region-1')
         return f"https://s3.{mock_region}.amazonaws.com/{mock_bucket}/{unique_filename}"
 
     # Actual S3 upload logic
