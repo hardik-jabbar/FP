@@ -8,11 +8,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="assets/css/marketplace.css">
-  <script src="scripts/api.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="scripts/supabase.js"></script>
+  <script src="scripts/marketplace.js"></script>
   <script src="scripts/cart.js"></script>
-  <!-- Preload critical resources -->
+    <!-- Preload critical resources -->
   <link rel="preload" href="assets/css/marketplace.css" as="style">
-  <link rel="preload" href="scripts/api.js" as="script">
+  <link rel="preload" href="scripts/marketplace.js" as="script">
   <link rel="preload" href="scripts/cart.js" as="script">
   <script>
     tailwind.config = {
@@ -205,12 +208,12 @@
     <div class="container mx-auto px-4">
       <div class="flex justify-between items-center mb-8">
         <h2 class="text-3xl font-bold">Featured Listings</h2>
-        <a href="tractors.html" class="text-primary hover:underline flex items-center">
+        <button onclick="viewAllListings()" class="text-primary hover:underline flex items-center">
           View All
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
           </svg>
-        </a>
+        </button>
       </div>
       
       <div id="featuredListings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -233,11 +236,11 @@
         </div>
         <div class="mt-4 md:mt-0 flex space-x-4">
           <div class="relative">
-            <select id="sortBy" class="appearance-none bg-dark-300 text-white rounded-lg pl-4 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+            <select id="sortBy" onchange="sortListings(this.value)" class="appearance-none bg-dark-300 text-white rounded-lg pl-4 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
               <option value="newest">Newest First</option>
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
-              <option value="year">Year: Newest First</option>
+              <option value="year-new">Year: Newest First</option>
             </select>
             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
               <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -304,84 +307,50 @@
       document.getElementById('footer').innerHTML = html;
       });
 
-  // Load products when the page loads
-  // Dummy tractors fallback
-const fallbackTractors=[
-  {id:1,name:'Kubota L2501',price:26000,description:'Compact tractor ideal for small farms.',image_url:'https://source.unsplash.com/600x400?kubota'},
-  {id:2,name:'Case IH Farmall 75C',price:39000,description:'75-HP tractor with cab and loader.',image_url:'https://source.unsplash.com/600x400?caseIH'},
-  {id:3,name:'Deutz-Fahr 5080D',price:41000,description:'Efficient German-engineered utility tractor.',image_url:'https://source.unsplash.com/600x400?deutz'}
-];
-function renderCard(t){return `<div class=\"card-hover bg-dark-200 rounded-lg overflow-hidden\">
-  <img src=\"${t.image_url}\" alt=\"${t.name}\" class=\"w-full h-48 object-cover\">
-  <div class=\"p-4\">
-    <h3 class=\"text-lg font-semibold mb-2\">${t.name}</h3>
-    <p class=\"text-gray-400 mb-4\">${t.description}</p>
-    <span class=\"text-xl font-bold\">$${t.price.toLocaleString()}</span>
-  </div>
-</div>`;}
-
-function populate(list){
-  const f=document.getElementById('featuredListings');if(f)f.innerHTML=list.map(renderCard).join('');
-  const g=document.getElementById('tractorsList');if(g)g.innerHTML=list.map(renderCard).join('');
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     try {
-      // Get featured listings
-      const featured = await api.getFeatured();
-      const featuredContainer = document.getElementById('featuredListings');
-      if (featuredContainer) {
-        featuredContainer.innerHTML = featured.map(tractor => `
-          <div class="card-hover bg-dark-200 rounded-lg overflow-hidden">
-            <img src="${tractor.image_url}" alt="${tractor.name}" class="w-full h-48 object-cover">
-            <div class="p-4">
-              <h3 class="text-lg font-semibold mb-2">${tractor.name}</h3>
-              <p class="text-gray-400 mb-4">${tractor.description}</p>
-              <div class="flex justify-between items-center">
-                <span class="text-xl font-bold">$${tractor.price.toLocaleString()}</span>
-                <button onclick="viewTractor(${tractor.id})" class="bg-primary text-primary-foreground px-4 py-2 rounded-lg">
-                  View Details
-                </button>
-              </div>
-            </div>
-          </div>
-        `).join('');
+      // Initialize listings and filters from marketplace.js
+      await initializeMarketplace();
+      
+      // Set up search input handler
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          // Debounce search to avoid too many requests
+          clearTimeout(searchInput.debounceTimer);
+          searchInput.debounceTimer = setTimeout(() => {
+            searchListings(e.target.value);
+          }, 300);
+        });
       }
-
-      // Get all tractors
-      const tractors = await api.getTractors();
-      const tractorsContainer = document.getElementById('tractorsList');
-      if (tractorsContainer) {
-        tractorsContainer.innerHTML = tractors.map(tractor => `
-          <div class="card-hover bg-dark-200 rounded-lg overflow-hidden">
-            <img src="${tractor.image_url}" alt="${tractor.name}" class="w-full h-48 object-cover">
-            <div class="p-4">
-              <h3 class="text-lg font-semibold mb-2">${tractor.name}</h3>
-              <p class="text-gray-400 mb-4">${tractor.description}</p>
-            <div class="flex justify-between items-center">
-                <span class="text-xl font-bold">$${tractor.price.toLocaleString()}</span>
-                <button onclick="viewTractor(${tractor.id})" class="bg-primary text-primary-foreground px-4 py-2 rounded-lg">
-                View Details
-              </button>
-            </div>
-          </div>
-        </div>
-        `).join('');
-    }
+      
+      // Set up filter handlers
+      document.querySelectorAll('[data-category]').forEach(btn => {
+        btn.addEventListener('click', () => filterByCategory(btn.dataset.category));
+      });
+      
+      // Initial load of featured listings
+      await loadFeaturedListings();
+      
+      // Initial load of all listings
+      await loadAllListings();
+      
     } catch (error) {
-      console.error('Error loading products:', error);
-      populate(fallbackTractors);
-      // Show error message to user
+      console.error('Error initializing marketplace:', error);
       const featuredContainer = document.getElementById('featuredListings');
-      if(featuredContainer && featuredContainer.childElementCount===0){featuredContainer.innerHTML='<p class="text-red-500 text-center col-span-full">Error loading featured listings.</p>';}
+      if(featuredContainer) {
+        featuredContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">Error loading featured listings.</p>';
+      }
       const tractorsContainer = document.getElementById('tractorsList');
-      if(tractorsContainer && tractorsContainer.childElementCount===0){tractorsContainer.innerHTML='<p class="text-red-500 text-center col-span-full">Error loading tractors.</p>';}
+      if(tractorsContainer) {
+        tractorsContainer.innerHTML = '<p class="text-red-500 text-center col-span-full">Error loading listings.</p>';
+      }
     }
   });
 
-  // Function to view tractor details
-  function viewTractor(id) {
-    window.location.href = `tractor-detail.html?id=${id}`;
+  // Function to view listing details
+  function viewListing(id) {
+    window.location.href = `listing-detail.html?id=${id}`;
   }
   </script>
 
