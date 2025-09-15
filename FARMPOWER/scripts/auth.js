@@ -1,61 +1,62 @@
-// Authentication service for FarmPower
-const API_BASE_URL = 'https://fp-mipu.onrender.com/api/v1';
+// Authentication service for FarmPower using Supabase
+const SUPABASE_URL = 'https://fmqxdoocmapllbuecblc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcXhkb29jbWFwbGxidWVjYmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTQ2NjUyMjYsImV4cCI6MjAxMDI0MTIyNn0.Fk1PiWHtCiCWus6nhgVrF_n7LSt9G5VuhDCCXYFPqE4';
+
+// Initialize Supabase client
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Make auth available globally
 window.auth = {
-    // Store the token in localStorage
-    setToken(token) {
-        localStorage.setItem('token', token);
-    },
-
-    // Get the stored token
-    getToken() {
-        return localStorage.getItem('token');
-    },
-
-    // Clear the stored token
-    removeToken() {
-        localStorage.removeItem('token');
-    },
-
     // Check if user is authenticated
     isAuthenticated() {
-        return !!this.getToken();
+        return !!supabase.auth.getSession();
     },
 
     // Register a new user
     async registerUser(userData) {
-        // If only email provided, treat as OTP request
-        const isOtpRequest = Object.keys(userData).length === 1 && userData.email;
-        let endpoint = isOtpRequest ? '/users/request-otp' : '/users/register';
-
-        // Transform fields for backend if full registration
-        if (!isOtpRequest) {
-            userData = {
-                email: userData.email,
-                password: userData.password,
-                full_name: `${userData.firstName} ${userData.lastName}`,
-                role: 'FARMER',
-                farm_type: userData.farmType,
-                terms_accepted: userData.terms
-            };
-        }
-        
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Registration failed');
+            // If only email provided, treat as OTP request
+            const isOtpRequest = Object.keys(userData).length === 1 && userData.email;
+            
+            if (isOtpRequest) {
+                // Handle OTP request through custom backend if needed
+                throw new Error('OTP functionality not implemented');
             }
 
-            return await response.json();
+            // Register user with Supabase
+            const { data, error } = await supabase.auth.signUp({
+                email: userData.email,
+                password: userData.password,
+                options: {
+                    data: {
+                        full_name: `${userData.firstName} ${userData.lastName}`,
+                        role: 'FARMER',
+                        farm_type: userData.farmType,
+                        terms_accepted: userData.terms
+                    }
+                }
+            });
+
+            if (error) throw error;
+
+            // Create user profile in Supabase database
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .insert([
+                    {
+                        id: data.user.id,
+                        full_name: `${userData.firstName} ${userData.lastName}`,
+                        email: userData.email,
+                        role: 'FARMER',
+                        farm_type: userData.farmType,
+                        terms_accepted: userData.terms,
+                        is_active: true
+                    }
+                ]);
+
+            if (profileError) throw profileError;
+
+            return data;
         } catch (error) {
             console.error('Registration error:', error);
             throw error;
@@ -65,26 +66,13 @@ window.auth = {
     // Login user
     async loginUser(credentials) {
         try {
-            // Convert credentials to form data for OAuth2 compatibility
-            const formData = new URLSearchParams();
-            formData.append('username', credentials.email);
-            formData.append('password', credentials.password);
-
-            const response = await fetch(`${API_BASE_URL}/users/login/token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: formData
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: credentials.email,
+                password: credentials.password,
             });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Login failed');
-            }
+            if (error) throw error;
 
-            const data = await response.json();
-            this.setToken(data.access_token);
             return data;
         } catch (error) {
             console.error('Login error:', error);
@@ -92,45 +80,35 @@ window.auth = {
         }
     },
 
-    // Get user profile
+        // Get user profile
     async getUserProfile() {
         try {
-            const response = await fetch(`${API_BASE_URL}/users/me`, {
-                headers: {
-                    'Authorization': `Bearer ${this.getToken()}`
-                }
-            });
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (!user) throw new Error('No user found');
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch user profile');
-            }
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
 
-            return await response.json();
+            if (error) throw error;
+            
+            return profile;
         } catch (error) {
-            console.error('Error fetching user profile:', error);
+            console.error('Get profile error:', error);
             throw error;
         }
     },
 
-    // Verify OTP
-    async verifyOTP(email, otp) {
+    // Sign out
+    async signOut() {
         try {
-            const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, otp })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'OTP verification failed');
-            }
-
-            return await response.json();
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
         } catch (error) {
-            console.error('OTP verification error:', error);
+            console.error('Sign out error:', error);
             throw error;
         }
     }
