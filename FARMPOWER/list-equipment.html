@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>List Equipment - FarmPower</title>
+  <meta name="description" content="List your farm equipment for sale on FarmPower">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="scripts/supabase.js"></script>
+  <script src="scripts/auth.js"></script>
+  <style>
+    .dropzone {
+      border: 2px dashed #4CAF50;
+      border-radius: 0.5rem;
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .dropzone.dragover {
+      background-color: rgba(76, 175, 80, 0.1);
+      border-color: #2E7D32;
+    }
+    .preview-image {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 0.25rem;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Header will be loaded here -->
+  <div id="header"></div>
+
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">List Your Equipment</h1>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <form id="listingForm" class="space-y-6">
+          <!-- Basic Information -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Basic Information</h2>
+            
+            <div>
+              <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+              <input type="text" id="title" name="title" required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                <select id="category" name="category" required
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                  <option value="">Select category</option>
+                  <option value="tractor">Tractor</option>
+                  <option value="harvester">Harvester</option>
+                  <option value="implement">Implement</option>
+                  <option value="part">Part</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="price" class="block text-sm font-medium text-gray-700">Price ($)</label>
+                <input type="number" id="price" name="price" min="0" step="0.01" required
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+              </div>
+            </div>
+
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+              <textarea id="description" name="description" rows="4" required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"></textarea>
+            </div>
+          </div>
+
+          <!-- Equipment Details -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Equipment Details</h2>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="brand" class="block text-sm font-medium text-gray-700">Brand</label>
+                <input type="text" id="brand" name="brand"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+              </div>
+
+              <div>
+                <label for="model" class="block text-sm font-medium text-gray-700">Model</label>
+                <input type="text" id="model" name="model"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+              </div>
+
+              <div>
+                <label for="year" class="block text-sm font-medium text-gray-700">Year</label>
+                <input type="number" id="year" name="year" min="1900" max="2025"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+              </div>
+
+              <div>
+                <label for="hours" class="block text-sm font-medium text-gray-700">Hours Used</label>
+                <input type="number" id="hours" name="hours" min="0"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+              </div>
+            </div>
+
+            <div>
+              <label for="condition" class="block text-sm font-medium text-gray-700">Condition</label>
+              <select id="condition" name="condition" required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                <option value="">Select condition</option>
+                <option value="new">New</option>
+                <option value="like-new">Like New</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="poor">Poor</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Images -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Images</h2>
+            
+            <div id="dropzone" class="dropzone">
+              <div class="space-y-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div class="flex text-sm text-gray-600">
+                  <label for="images" class="relative cursor-pointer rounded-md font-medium text-green-600 hover:text-green-500">
+                    <span>Upload images</span>
+                    <input id="images" name="images" type="file" class="sr-only" multiple accept="image/*">
+                  </label>
+                  <p class="pl-1">or drag and drop</p>
+                </div>
+                <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB each</p>
+              </div>
+            </div>
+
+            <div id="imagePreview" class="grid grid-cols-4 gap-4"></div>
+          </div>
+
+          <!-- Location -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Location</h2>
+            
+            <div>
+              <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
+              <input type="text" id="location" name="location" required
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                placeholder="City, State">
+            </div>
+          </div>
+
+          <div class="pt-4">
+            <button type="submit"
+              class="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600">
+              List Equipment
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer will be loaded here -->
+  <div id="footer"></div>
+
+  <script>
+    // Check authentication
+    if (!auth.isAuthenticated()) {
+      window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+    }
+
+    // Load header and footer
+    fetch('components/header.html')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html;
+      });
+
+    fetch('components/footer.html')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('footer').innerHTML = html;
+      });
+
+    // Handle file drag and drop
+    const dropzone = document.getElementById('dropzone');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageInput = document.getElementById('images');
+    let files = [];
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const droppedFiles = [...e.dataTransfer.files].filter(file => file.type.startsWith('image/'));
+      handleFiles(droppedFiles);
+    });
+
+    imageInput.addEventListener('change', (e) => {
+      handleFiles([...e.target.files]);
+    });
+
+    function handleFiles(newFiles) {
+      files = [...files, ...newFiles];
+      updateImagePreview();
+    }
+
+    function updateImagePreview() {
+      imagePreview.innerHTML = files.map((file, index) => `
+        <div class="relative">
+          <img src="${URL.createObjectURL(file)}" alt="Preview" class="preview-image">
+          <button type="button" onclick="removeImage(${index})"
+            class="absolute -top-2 -right-2 rounded-full bg-red-500 text-white w-6 h-6 flex items-center justify-center text-sm">
+            ×
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function removeImage(index) {
+      files.splice(index, 1);
+      updateImagePreview();
+    }
+
+    // Handle form submission
+    document.getElementById('listingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      try {
+        // First, upload images to Supabase storage
+        const imageUrls = await Promise.all(files.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const filePath = `equipment/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('equipment-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('equipment-images')
+            .getPublicUrl(filePath);
+
+          return publicUrl;
+        }));
+
+        // Then create the equipment listing
+        const formData = {
+          title: document.getElementById('title').value,
+          category: document.getElementById('category').value,
+          price: parseFloat(document.getElementById('price').value),
+          description: document.getElementById('description').value,
+          brand: document.getElementById('brand').value,
+          model: document.getElementById('model').value,
+          year: parseInt(document.getElementById('year').value),
+          hours_used: parseInt(document.getElementById('hours').value),
+          condition: document.getElementById('condition').value,
+          location: document.getElementById('location').value,
+          images: imageUrls
+        };
+
+        await equipmentApi.createListing(formData);
+
+        // Redirect to the listing management page
+        window.location.href = '/my-listings.html';
+      } catch (error) {
+        console.error('Error creating listing:', error);
+        alert('Failed to create listing. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
