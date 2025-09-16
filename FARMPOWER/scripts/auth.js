@@ -3,7 +3,12 @@ const SUPABASE_URL = 'https://fmqxdoocmapllbuecblc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcXhkb29jbWFwbGxidWVjYmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTQ2NjUyMjYsImV4cCI6MjAxMDI0MTIyNn0.Fk1PiWHtCiCWus6nhgVrF_n7LSt9G5VuhDCCXYFPqE4';
 
 // Initialize Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        autoRefreshToken: true,
+        persistSession: true
+    }
+});
 
 // Make auth available globally
 window.auth = {
@@ -19,44 +24,65 @@ window.auth = {
             const isOtpRequest = Object.keys(userData).length === 1 && userData.email;
             
             if (isOtpRequest) {
-                // Handle OTP request through custom backend if needed
-                throw new Error('OTP functionality not implemented');
+                throw new Error('Email verification required');
             }
 
-            // Register user with Supabase
-            const { data, error } = await supabase.auth.signUp({
+            // First, check if email already exists
+            const { data: existingUser } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', userData.email)
+                .single();
+
+            if (existingUser) {
+                throw new Error('Email already registered');
+            }
+
+            // Register user with Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: userData.email,
                 password: userData.password,
                 options: {
                     data: {
                         full_name: `${userData.firstName} ${userData.lastName}`,
                         role: 'FARMER',
-                        farm_type: userData.farmType,
-                        terms_accepted: userData.terms
                     }
                 }
             });
 
-            if (error) throw error;
+            if (authError) throw authError;
 
-            // Create user profile in Supabase database
+            if (!authData.user) {
+                throw new Error('Failed to create user');
+            }
+
+            // Create user profile
             const { error: profileError } = await supabase
                 .from('profiles')
                 .insert([
                     {
-                        id: data.user.id,
+                        id: authData.user.id,
                         full_name: `${userData.firstName} ${userData.lastName}`,
                         email: userData.email,
+                        phone: userData.phone || null,
                         role: 'FARMER',
                         farm_type: userData.farmType,
-                        terms_accepted: userData.terms,
-                        is_active: true
+                        is_active: true,
+                        is_banned: false
                     }
                 ]);
 
-            if (profileError) throw profileError;
+            if (profileError) {
+                console.error('Profile creation error:', profileError);
+                // Try to delete the auth user if profile creation fails
+                await supabase.auth.admin.deleteUser(authData.user.id);
+                throw new Error('Failed to create user profile');
+            }
 
-            return data;
+            return {
+                user: authData.user,
+                message: 'Registration successful! Please check your email to verify your account.'
+            };
         } catch (error) {
             console.error('Registration error:', error);
             throw error;
