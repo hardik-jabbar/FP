@@ -1,192 +1,130 @@
-// Authentication service for FarmPower using Supabase
-const SUPABASE_URL = 'https://fmqxdoocmapllbuecblc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcXhkb29jbWFwbGxidWVjYmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTQ2NjUyMjYsImV4cCI6MjAxMDI0MTIyNn0.Fk1PiWHtCiCWus6nhgVrF_n7LSt9G5VuhDCCXYFPqE4';
+import { supabase } from './supabase-config.js';
 
-// Initialize Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-        autoRefreshToken: true,
-        persistSession: true
-    }
-});
-
-// Make auth available globally
-window.auth = {
-    // Check if user is authenticated
-    isAuthenticated() {
-        return !!supabase.auth.getSession();
-    },
-
-    // Register a new user
-    async registerUser(userData) {
+class Auth {
+    async registerUser(formData) {
         try {
-            // If only email provided, treat as OTP request
-            const isOtpRequest = Object.keys(userData).length === 1 && userData.email;
-            
-            if (isOtpRequest) {
-                throw new Error('Email verification required');
-            }
-
-            // First, check if email already exists
-            const { data: existingUser } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('email', userData.email)
-                .single();
-
-            if (existingUser) {
-                throw new Error('Email already registered');
-            }
-
-            // Register user with Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: userData.email,
-                password: userData.password,
+            const { data, error } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
                 options: {
                     data: {
-                        full_name: `${userData.firstName} ${userData.lastName}`,
-                        role: 'FARMER',
+                        firstName: formData.firstName,
+                        lastName: formData.lastName,
+                        farmType: formData.farmType
                     }
                 }
             });
 
-            if (authError) throw authError;
-
-            if (!authData.user) {
-                throw new Error('Failed to create user');
-            }
-
-            // Create user profile
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        id: authData.user.id,
-                        full_name: `${userData.firstName} ${userData.lastName}`,
-                        email: userData.email,
-                        phone: userData.phone || null,
-                        role: 'FARMER',
-                        farm_type: userData.farmType,
-                        is_active: true,
-                        is_banned: false
-                    }
-                ]);
-
-            if (profileError) {
-                console.error('Profile creation error:', profileError);
-                // Try to delete the auth user if profile creation fails
-                await supabase.auth.admin.deleteUser(authData.user.id);
-                throw new Error('Failed to create user profile');
-            }
-
-            return {
-                user: authData.user,
-                message: 'Registration successful! Please check your email to verify your account.'
-            };
-        } catch (error) {
-            console.error('Registration error:', error);
-            throw error;
-        }
-    },
-
-    // Login user
-    async loginUser(credentials) {
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: credentials.email,
-                password: credentials.password,
-            });
-
             if (error) throw error;
+
+            // Create profile record
+            if (data.user) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([
+                        {
+                            user_id: data.user.id,
+                            first_name: formData.firstName,
+                            last_name: formData.lastName,
+                            email: formData.email,
+                            farm_type: formData.farmType
+                        }
+                    ]);
+
+                if (profileError) throw profileError;
+            }
 
             return data;
         } catch (error) {
-            console.error('Login error:', error);
-            throw error;
+            console.error('Registration error:', error);
+            throw new Error(error.message);
         }
-    },
+    }
 
-        // Get user profile
-    async getUserProfile() {
+    async loginUser({ email, password }) {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            
-            if (!user) throw new Error('No user found');
-
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
 
             if (error) throw error;
-            
-            return profile;
+            return data;
         } catch (error) {
-            console.error('Get profile error:', error);
-            throw error;
+            console.error('Login error:', error);
+            throw new Error(error.message);
         }
-    },
+    }
 
-    // Sign out
-    async signOut() {
+    async verifyOTP(email, token) {
+        try {
+            const { data, error } = await supabase.auth.verifyOtp({
+                email,
+                token,
+                type: 'signup'
+            });
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('OTP verification error:', error);
+            throw new Error(error.message);
+        }
+    }
+
+    async logoutUser() {
         try {
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
+            window.location.href = 'login.html';
         } catch (error) {
-            console.error('Sign out error:', error);
-            throw error;
+            console.error('Logout error:', error);
+            throw new Error(error.message);
         }
     }
-};
 
-// Export the auth object
-window.auth = auth;
-        return data;
-    } catch (error) {
-        console.error('Login error:', error);
-        throw error;
-    }
-};
+    async getUserProfile() {
+        try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            
+            if (userError) throw userError;
+            if (!user) throw new Error('No user found');
 
-// Verify OTP
-const verifyOTP = async (email, otp) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, otp })
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'OTP verification failed');
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            if (error) throw error;
+
+            return {
+                firstName: data.first_name,
+                lastName: data.last_name,
+                email: data.email,
+                farmType: data.farm_type,
+                equipmentCount: data.equipment_count || 0,
+                activeServices: data.active_services || 0,
+                notifications: data.notifications || 0,
+                recentActivity: data.recent_activity || []
+            };
+        } catch (error) {
+            console.error('Get profile error:', error);
+            throw new Error('Failed to fetch user profile');
         }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('OTP verification error:', error);
-        throw error;
     }
-};
 
-// Logout user
-const logoutUser = () => {
-    removeToken();
-    window.location.href = '/login.html';
-};
+    async isAuthenticated() {
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+            return !!session;
+        } catch (error) {
+            console.error('Auth check error:', error);
+            return false;
+        }
+    }
+}
 
-// Export functions
-window.auth = {
-    setToken,
-    getToken,
-    removeToken,
-    isAuthenticated,
-    getUserProfile,
-    registerUser,
-    loginUser,
-    verifyOTP,
-    logoutUser
-}; 
+const auth = new Auth();
+export default auth;
